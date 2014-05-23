@@ -1,0 +1,284 @@
+#!/usr/bin/perl 
+#===============================================================================
+#
+#         FILE: check_dispatch
+#
+#        USAGE: check_dispatch -H http://www.wikidata.org
+#
+#  DESCRIPTION: nagios plugin to check if we have the latest version of the
+#               mediawiki software in our webserver
+#
+#      OPTIONS: ---
+# REQUIREMENTS: WWW::Mechanize
+#         BUGS: ---
+#        NOTES: ---
+#       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
+#      COMPANY:
+#      VERSION: 0.1
+#      CREATED: 
+#     REVISION: ---
+#===============================================================================
+
+use strict;
+use warnings;
+
+# load the libwww module
+use LWP;
+use JSON;
+# load the Getopt::Long module for cli arguments
+use Getopt::Long;
+
+# load the Pod::Usage module for automatic documentation
+use Pod::Usage;
+
+#-------------------------------------------------------------------------------
+# GLOBAL VARIABLES
+#-------------------------------------------------------------------------------
+
+# check user-agent
+my $agent = "nagios check_dispatch";
+
+# save x-meta-generator header with version info
+my $header = undef;
+
+# mediawiki url te checken
+my $siteurl = undef;    # this has to be a cli argument
+
+# url for api call to site statistics
+my $mw_dl_url = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistics";
+
+my $debug    = undef;
+my $response = undef;
+
+my $help     = undef;
+my $version  = "0.3";
+my $realm    = undef;
+my $netloc   = undef;
+my $user     = undef;
+my $passwd   = undef;
+my $revision = undef;
+
+#-------------------------------------------------------------------------------
+# process cli arguments
+#-------------------------------------------------------------------------------
+Getopt::Long::Configure( "no_ignore_case", "bundling" );
+GetOptions(
+    'H|hostname=s' => \$siteurl,
+    'n|netloc=s'   => \$netloc,
+    'r|realm=s'    => \$realm,
+    'u|user=s'     => \$user,
+    'p|passwd=s'   => \$passwd,
+    'h|help|?'     => \$help,
+    'v|verbose'    => \$debug,
+    'V|version'    => \$revision,
+);
+
+# give version if asked and exit
+if ($revision) {
+    print "$0 version: $version\n";
+    exit 0;
+}
+
+# if help chosen, display it
+pod2usage( -verbose => 2, -noperldoc => 1, ) if $help;
+
+# if no -H specified, show usage
+pod2usage() unless $siteurl;
+
+#-------------------------------------------------------------------------------
+# start the check
+#-------------------------------------------------------------------------------
+# create a user agent object to show in the webserver logs
+my $ua = LWP::UserAgent->new;
+$ua->agent($agent);
+
+# do not wait for ever, after 20 seconds give up
+$ua->timeout(20);
+
+if ( defined $debug ) {
+    $ua->show_progress("true");
+}
+
+# if we need to enter login info, else just get the url
+if ( defined $user ) {
+    $ua->credentials( $netloc, $realm, $user, $passwd );
+    $response = $ua->get($siteurl);
+}
+else {
+    $response = $ua->get($siteurl);
+}
+
+# if the web request is succesful, proceed with check. Else exit with warning.
+if ( $response->is_success ) {
+    my $json        = JSON->new->utf8;
+    my $dispatch = $json->decode( $response );    
+
+    $header = $response->header("Content-Type");
+
+    die "could not get header\n" unless defined $header;
+
+    # if the api call fails, then die
+    if ( $header =~ m/application/json ) {
+        if ( $response =~ m/dispatch (.*)$/i ) {
+            $dispatch = $1;
+            print "$dispatch\n"
+        }
+    }
+    else {
+        print "WARNING: This does not look like the correct site\n";
+        print "$header\n" if defined $header;
+        exit 1;
+    }
+}
+else {
+    print "WARNING: we got: ", $response->status_line,
+      " when requesting $siteurl.
+    Something went wrong fetching it.\n";
+    exit 1;
+}
+
+use WWW::Mechanize;
+
+# create new mechanize object without autocheck
+my $mech = WWW::Mechanize->new( autocheck => 0, );
+
+# set another user-agent, mediawiki.org blocks libwww-perl (if they think this
+# helps ...)
+$mech->agent($agent);
+
+# show debugging if verbose is on
+if ( defined $debug ) {
+    $mech->show_progress(1);
+}
+
+# get the page
+$mech->get($mw_dl_url);
+
+if ( $mech->success ) {
+   print "$dispatch\n";
+}
+else {
+    print "WARNING: webserver $mw_dl_url returned ", $mech->status, "\n";
+    exit 1;
+}
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#  Application Documentation
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+=head1 NAME
+
+check_dispatch - check dispatch stats 
+
+=head1 VERSION
+
+This documentation refers to <check_dispatch>
+
+=head1 USAGE
+
+check_dispatch -H http://www.example.com [-v true] [-n netlocation -r
+realm -u username -p password
+
+=head1 REQUIRED ARGUMENTS
+
+-H|--hostname
+web address of site hosting the mediawiki site;
+
+=head1 OPTIONS
+
+-H|--hostname
+web address of site hosting the mediawiki site;
+
+-n|--netloc
+hostname:port combination for webserver dns hostname. *NO* protocol (no
+http:// in it), just a simple or fully qualified name plus the port number.
+
+-r|--realm
+authentication realm; this is case sensitive.
+
+-u|--username
+
+-p|--password
+
+-v|--verbose
+standard this setting is 'false'. If 'true', then one can see extra debugging
+info of the http request;
+
+-h|--help
+this text;
+
+=head1 DESCRIPTION
+
+Nagios check to monitor dispatch stats via the Wikidata API
+
+When using this check for password protected sites (those where the webserver
+sends a 401 answer code and a pop up browser window requests us to enter a
+username/password combination), we need to enter in fact four arguments: the
+netloc, username, password and realm.
+
+The netloc (this is the name the libwww gives it) is a string formed by a
+combination of the dns hostname followed by ':' and then by a number. The
+number represents the port used by the webserver, usually 80. So the netloc
+for the site http://www.example.com would be www.example.com:80, without the
+http:// part which refers to the web protocol.
+
+For the other 3 arguments (realm, username and password) please refer to
+http://en.wikipedia.org/wiki/Basic_access_authentication 
+
+=head1 DIAGNOSTICS
+
+This check can fail because of network problems (no connectivity to the
+internet to check the mediawiki.org version, for instance). Use the --verbose
+true parameter to get better information if it fails.
+
+This check does not (yet) work behind a proxy server. Patches welcome!
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+Place the plugin in the plugin directory of the nagios server (usually,
+/usr/local/nagios/libexec/), make the nagios user its owner and change the
+permissions to 775.
+
+=head1 DEPENDENCIES
+
+This plugin requires the WWW::Mechanize module. This is a very common module,
+so chances are it is already installed on your system.
+
+On a (recent) Redhat based system, you can install it using yum if you enable
+the repoforge yum repository:
+
+# yum install perl-WWW-Mechanize
+
+On a debian based system the package is called libwww-mechanize-perl and you
+use apt-get so:
+
+# apt-get install libwww-mechanize-perl
+
+On other flavours of unix, check your package manager documentation or use
+something like perlbrew or, as a last resort, the cpan shell, to install it.
+
+=head1 INCOMPATIBILITIES
+
+None known yet.
+
+=head1 BUGS AND LIMITATIONS
+
+This check assumes that the download link of the mediawiki.org site is
+L<http://www.mediawiki.org/wiki/Download> and that the mediawiki sites will
+continue to use an x-meta-generator header with the version used by the sites.
+If those things change, the plugin will fail miserably.
+
+=head1 AUTHOR
+
+=head1 LICENCE AND COPYRIGHT
+
+This module is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself. See perldoc perlartistic.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+=cut
+
