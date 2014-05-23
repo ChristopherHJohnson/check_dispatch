@@ -112,8 +112,6 @@ else {
 
 # if the web request is succesful, proceed with check. Else exit with warning.
 if ( $response->is_success ) {
-    my $json        = JSON->new->utf8;
-    my $dispatch = $json->decode( $response );    
 
     $header = $response->header("Content-Type");
 
@@ -121,10 +119,7 @@ if ( $response->is_success ) {
 
     # if the api call fails, then die
     if ( $header =~ m/json.*$/i  ) {
-        if ( $response =~ m/dispatch (.*)$/i ) {
-            $dispatch = $1;
-            print "$dispatch\n"
-        }
+            print "this is a json blob\n"
     }
     else {
         print "WARNING: This does not look like the correct site\n";
@@ -156,11 +151,12 @@ if ( defined $debug ) {
 # get the page
 $mech->get($fullurl);
 
-if ( $mech->success ) {
+my $json        = JSON->new->utf8;
 
-    my $dispatchstat = $mech->find_link( text_regex => qr/dispatch/ );
-    my $stat = $dispatchstat->url;
-    print "$stat\n";
+if ( $mech->success ) {
+    my $dispatch        = $mech->content or BAIL_OUT Dumper $mech->response;
+#    my $dispatch = from_json( $content );
+    print "$dispatch\n";
 }
 else {
     print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
