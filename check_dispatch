@@ -45,7 +45,7 @@ my $header = undef;
 my $siteurl = undef;    # this has to be a cli argument
 
 # url for api call to site statistics
-my $mw_dl_url = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistics";
+my $apiurl = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistics";
 
 my $debug    = undef;
 my $response = undef;
@@ -99,13 +99,15 @@ if ( defined $debug ) {
     $ua->show_progress("true");
 }
 
+my $fullurl = $siteurl . $apiurl;
+
 # if we need to enter login info, else just get the url
 if ( defined $user ) {
     $ua->credentials( $netloc, $realm, $user, $passwd );
-    $response = $ua->get($siteurl);
+    $response = $ua->get($fullurl);
 }
 else {
-    $response = $ua->get($siteurl);
+    $response = $ua->get($fullurl);
 }
 
 # if the web request is succesful, proceed with check. Else exit with warning.
@@ -118,7 +120,7 @@ if ( $response->is_success ) {
     die "could not get header\n" unless defined $header;
 
     # if the api call fails, then die
-    if ( $header =~ m/application/json ) {
+    if ( $header =~ m/json.*$/i  ) {
         if ( $response =~ m/dispatch (.*)$/i ) {
             $dispatch = $1;
             print "$dispatch\n"
@@ -132,7 +134,7 @@ if ( $response->is_success ) {
 }
 else {
     print "WARNING: we got: ", $response->status_line,
-      " when requesting $siteurl.
+      " when requesting $fullurl.
     Something went wrong fetching it.\n";
     exit 1;
 }
@@ -152,13 +154,16 @@ if ( defined $debug ) {
 }
 
 # get the page
-$mech->get($mw_dl_url);
+$mech->get($fullurl);
 
 if ( $mech->success ) {
-   print "$dispatch\n";
+
+    my $dispatchstat = $mech->find_link( text_regex => qr/dispatch/ );
+    my $stat = $dispatchstat->url;
+    print "$stat\n";
 }
 else {
-    print "WARNING: webserver $mw_dl_url returned ", $mech->status, "\n";
+    print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
     exit 1;
 }
 
