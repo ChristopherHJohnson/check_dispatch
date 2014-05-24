@@ -151,19 +151,14 @@ if ( defined $debug ) {
 # get the page
 $mech->get($fullurl);
 
-my $json        = JSON->new->utf8;
-
 if ( $mech->success ) {
     my $content        = $mech->content or BAIL_OUT Dumper $mech->response;
-    my $dispatch = decode_json( $content );
-    my @layer1 = @{ $dispatch->{'query'} };
-    foreach ( @layer1 ) {
-        my @layer2 = @{ $_->{'statistics'} };
-        foreach( @layer2 ) {
-        my ( $thing, $other_thing ) = split /:/, $_;
-        print $other_thing, "\n";
-        }
+    my $query = from_json( $content );
+    my @stats;
+    for my $key (keys %$query) {
+        push @stats, keys %{$query->{$key}{'statistics'}};
     }
+    print "@stats\n";
 }
 else {
     print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
