@@ -30,7 +30,7 @@ use Getopt::Long;
 
 # load the Pod::Usage module for automatic documentation
 use Pod::Usage;
-
+use Data::Dumper;
 #-------------------------------------------------------------------------------
 # GLOBAL VARIABLES
 #-------------------------------------------------------------------------------
@@ -152,17 +152,18 @@ if ( defined $debug ) {
 $mech->get($fullurl);
 
 if ( $mech->success ) {
-    my $content        = $mech->content or BAIL_OUT Dumper $mech->response;
+    my $content        = $mech->content or Dumper $mech->response;
     my $query = from_json( $content );
     my @stats;
     for my $key (keys %$query) { 
         my $stat = $query->{$key}; 
         for my $key2 (keys %$stat) {
             my $dispatch = $stat->{$key2};
-            push @stats, keys %{$dispatch->{'dispatch'}};
+            for my $key3 (keys %{$dispatch}) {
+               print "$key3 => ${$dispatch}{$key3}\n";
+            }
         }
     }
-    print "@stats\n";
 }
 else {
     print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
