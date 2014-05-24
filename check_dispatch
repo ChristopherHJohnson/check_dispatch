@@ -5,7 +5,7 @@
 #
 #        USAGE: check_dispatch -H http://www.wikidata.org
 #
-#  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata
+#  DESCRIPTION: nagios plugin to check dispatch Wstats on Wikidata
 #               
 #
 #      OPTIONS: ---
@@ -155,8 +155,12 @@ if ( $mech->success ) {
     my $content        = $mech->content or BAIL_OUT Dumper $mech->response;
     my $query = from_json( $content );
     my @stats;
-    for my $key (keys %$query) {
-        push @stats, keys %{$query->{$key}{'statistics'}};
+    for my $key (keys %$query) { 
+        my $stat = $query->{$key}; 
+        for my $key2 (keys %$stat) {
+            my $dispatch = $stat->{$key2};
+            push @stats, keys %{$dispatch->{'dispatch'}};
+        }
     }
     print "@stats\n";
 }
