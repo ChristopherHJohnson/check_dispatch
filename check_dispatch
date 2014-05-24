@@ -5,8 +5,8 @@
 #
 #        USAGE: check_dispatch -H http://www.wikidata.org
 #
-#  DESCRIPTION: nagios plugin to check if we have the latest version of the
-#               mediawiki software in our webserver
+#  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata
+#               
 #
 #      OPTIONS: ---
 # REQUIREMENTS: WWW::Mechanize
@@ -154,9 +154,16 @@ $mech->get($fullurl);
 my $json        = JSON->new->utf8;
 
 if ( $mech->success ) {
-    my $dispatch        = $mech->content or BAIL_OUT Dumper $mech->response;
-#    my $dispatch = from_json( $content );
-    print "$dispatch\n";
+    my $content        = $mech->content or BAIL_OUT Dumper $mech->response;
+    my $dispatch = decode_json( $content );
+    my @layer1 = @{ $dispatch->{'query'} };
+    foreach ( @layer1 ) {
+        my @layer2 = @{ $_->{'statistics'} };
+        foreach( @layer2 ) {
+        my ( $thing, $other_thing ) = split /:/, $_;
+        print $other_thing, "\n";
+        }
+    }
 }
 else {
     print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
