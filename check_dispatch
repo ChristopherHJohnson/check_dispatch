@@ -5,11 +5,14 @@
 #
 #        USAGE: check_dispatch -H http://www.wikidata.org
 #
-#  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.  Retrieves newest change timestamp and diffs it against current time.  
-#               Also, retrieves average lag and puts it in a performance label tag for Nagios.
+#  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.  
+#               Retrieves newest change timestamp and diffs against current time.  
+#               Also, retrieves average lag and puts it in a performance label 
+#               tag for Nagios.
 #
 #      OPTIONS: ---
-# REQUIREMENTS: WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration, DateTime::Format::Strptime 
+# REQUIREMENTS: WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration, 
+#               DateTime::Format::Strptime 
 #         BUGS: ---
 #        NOTES: ---
 #       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
@@ -21,12 +24,12 @@
 
 use strict;
 use warnings;
-#no warnings qw(uninitialized);
 
 #time calculations
 use DateTime;
 use DateTime::Format::Duration;
 use DateTime::Format::Strptime;
+
 # load libwww module
 use LWP;
 
@@ -50,7 +53,7 @@ use WWW::Mechanize;
 #Data Dump for Mech Response
 use Data::Dumper;
 
-#Storable for persistance 
+#Storable for persistance (option) 
 use Storable qw( freeze thaw );
 
 #-------------------------------------------------------------------------------
