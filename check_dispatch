@@ -9,7 +9,7 @@
 #               
 #
 #      OPTIONS: ---
-# REQUIREMENTS: WWW::Mechanize, JSON
+# REQUIREMENTS: WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration, DateTime::Format::Strptime 
 #         BUGS: ---
 #        NOTES: ---
 #       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
@@ -25,7 +25,6 @@ use warnings;
 
 #time calculations
 use DateTime;
-use DateTime::Format::ISO8601;
 use DateTime::Format::Duration;
 use DateTime::Format::Strptime;
 # load libwww module
@@ -59,9 +58,6 @@ use Storable qw( freeze thaw );
 #-------------------------------------------------------------------------------
 # this hash is provided by module utils if nagios is present
 my %ERRORS=('OK'=>0,'WARNING'=>1,'CRITICAL'=>2,'UNKNOWN'=>3,'DEPENDENT'=>4);
-
-# filter null value params
-my @filtered_keys = ('freshest','stalest','median');
 
 # check user-agent
 my $agent = "nagios check_dispatch";
@@ -200,7 +196,7 @@ if ( $mech->success ) {
     #print "$thawedquery";
     my $timestamp = &format_timestamp(\@dispatch);
     my $diff = &change_diff(\@dispatch);
-    print "the newest timestamp from the changes table is $timestamp , $diff ago | lag=  @dispatch2 [s];[3];[10]\n";
+    print "The newest timestamp from the changes table is $timestamp , $diff ago | lag=  @dispatch2 [s];[3];[10]\n";
 }
 else {
     print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
@@ -236,9 +232,7 @@ sub change_diff {
    #calculate the duration
    my $duration = $dt1 - $dt2;
    #output the calculation in the format
-   my $format = DateTime::Format::Duration->new(
-       pattern => '%M minutes, %S seconds'
-   );
+   my $format = DateTime::Format::Duration->new( pattern => '%M minutes, %S seconds' );
    $format->format_duration($duration);
 }
   # ISO8601
@@ -310,8 +304,7 @@ http://en.wikipedia.org/wiki/Basic_access_authentication
 
 =head1 DIAGNOSTICS
 
-This check can fail because of network problems (no connectivity to the
-internet to check the mediawiki.org version, for instance). Use the --verbose
+This check can fail because of network problems. Use the --verbose
 true parameter to get better information if it fails.
 
 =head1 CONFIGURATION AND ENVIRONMENT
@@ -322,21 +315,7 @@ permissions to 775.
 
 =head1 DEPENDENCIES
 
-This plugin requires the WWW::Mechanize module. This is a very common module,
-so chances are it is already installed on your system.
-
-On a (recent) Redhat based system, you can install it using yum if you enable
-the repoforge yum repository:
-
-# yum install perl-WWW-Mechanize
-
-On a debian based system the package is called libwww-mechanize-perl and you
-use apt-get so:
-
-# apt-get install libwww-mechanize-perl
-
-On other flavours of unix, check your package manager documentation or use
-something like perlbrew or, as a last resort, the cpan shell, to install it.
+This plugin requires the WWW::Mechanize module, JSON::Path and several DateTime modules
 
 =head1 INCOMPATIBILITIES
 
@@ -345,6 +324,7 @@ None known yet.
 =head1 BUGS AND LIMITATIONS
 
 =head1 AUTHOR
+Christopher H. Johnson
 
 =head1 LICENCE AND COPYRIGHT
 
