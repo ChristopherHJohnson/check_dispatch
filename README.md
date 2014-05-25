@@ -2,20 +2,20 @@
 
 Check dispatch stats from the Wikidata API
 
-##FILE: 
+###FILE: 
 check_dispatch
 
-##USAGE: 
+###USAGE: 
 check_dispatch -H http://www.wikidata.org
 
-##DESCRIPTION: 
+###DESCRIPTION: 
 Nagios plugin to check dispatch stats on Wikidata
 
 Retrieves newest change timestamp and diffs against current time.
 Also, retrieves average lag and puts it in a performance label 
 tag for Nagios.
 
-##OPTIONS: 
+###OPTIONS: 
     -H|--hostname 
      web address of site hosting the mediawiki site;
      -n|--netloc
@@ -31,13 +31,18 @@ tag for Nagios.
      -h|--help
      this text;
 
-##REQUIREMENTS: 
+###REQUIREMENTS: 
 WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration, 
 DateTime::Format::Strptime 
-##BUGS: ---
-##NOTES: ---
-##AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
-##COMPANY:
-##VERSION: 0.1
-##CREATED: 25-05-2014
-##REVISION: 0.1
+###BUGS: ---
+###NOTES: ---
+###AUTHOR: 
+Christopher Johnson, christopher.johnson@wikimedia.de
+###COMPANY:
+Wikimedia Deutschland
+###VERSION: 
+0.1
+###CREATED: 
+25-05-2014
+###REVISION: 
+0.1
