@@ -19,9 +19,9 @@
 #     REVISION: ---
 #===============================================================================
 
-#use strict;
+use strict;
 use warnings;
-no warnings qw(uninitialized);
+#no warnings qw(uninitialized);
 
 # load libwww module
 use LWP;
@@ -69,6 +69,8 @@ my $siteurl = undef;    # this has to be a cli argument
 
 # url for api call to site statistics
 my $apiurl = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistics";
+
+# concatenate base url and api url
 
 # static JSON paths to request metric keys
 my $keypath = "query.statistics.dispatch.newest.timestamp";
@@ -164,7 +166,6 @@ else {
 #-------------------------------------------------------------------------------
 # call the API with Mechanize
 #-------------------------------------------------------------------------------
-
 # create new mechanize object without autocheck
 my $mech = WWW::Mechanize->new( autocheck => 0, );
 
@@ -180,9 +181,6 @@ if ( defined $debug ) {
 # get the page
 $mech->get($fullurl);
 
-sub json_path {
-    JSON::Path->new($_[0])
-}
 if ( $mech->success ) {
     my $content = $mech->content or Dumper $mech->response;
     
@@ -191,16 +189,11 @@ if ( $mech->success ) {
     my @dispatch = $jpath->values($content);
     my $jpath2 = &json_path($keypath2);
     my @dispatch2 = $jpath2->values($content);    
+
     #my $storedquery = freeze ( $query);
     #my $thawedquery = thaw (@{ $storedquery->{'query'} } );
     #print "$thawedquery";
-    #$Data::Dumper::Values = $query;
-    #$Data::Dumper::Pair = " : ";
-    #my $qdump = eval(Dumper($query));
-#    print Dumper(@dispatch);
-    #my $newestchange = POSIX::strftime("%m/%d/%Y %H:%M:%S\n", $dispatch);
-    print "the newest timestamp from the changes table is @dispatch\n";
-    print "the average lag is @dispatch2\n";
+    print "the newest timestamp from the changes table is @dispatch | lag=  @dispatch2 [s];[3];[10]\n";
 
 #-------------------------------------------------------------------------------
 # another method for retrieving HoHoHoH
@@ -231,6 +224,9 @@ else {
     exit $ERRORS{'WARNING'};
 }
 
+sub json_path {
+    JSON::Path->new($_[0]);
+}
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #  Application Documentation
