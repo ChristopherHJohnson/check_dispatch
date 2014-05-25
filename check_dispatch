@@ -5,8 +5,8 @@
 #
 #        USAGE: check_dispatch -H http://www.wikidata.org
 #
-#  DESCRIPTION: nagios plugin to check dispatch Wstats on Wikidata
-#               
+#  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.  Retrieves newest change timestamp and diffs it against current time.  
+#               Also, retrieves average lag and puts it in a performance label tag for Nagios.
 #
 #      OPTIONS: ---
 # REQUIREMENTS: WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration, DateTime::Format::Strptime 
