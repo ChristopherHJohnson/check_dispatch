@@ -162,7 +162,7 @@ else {
 }
 
 #-------------------------------------------------------------------------------
-# call the API
+# call the API with Mechanize
 #-------------------------------------------------------------------------------
 
 # create new mechanize object without autocheck
@@ -180,23 +180,27 @@ if ( defined $debug ) {
 # get the page
 $mech->get($fullurl);
 
+sub json_path {
+    JSON::Path->new($_[0])
+}
 if ( $mech->success ) {
     my $content = $mech->content or Dumper $mech->response;
-
-    #traverse JSON path and decode value
-    my $jpath = JSON::Path->new($keypath2);
-    my $dispatch = $jpath->values($content);
     
+    #traverse JSON path and decode value
+    my $jpath = &json_path($keypath);
+    my @dispatch = $jpath->values($content);
+    my $jpath2 = &json_path($keypath2);
+    my @dispatch2 = $jpath2->values($content);    
     #my $storedquery = freeze ( $query);
     #my $thawedquery = thaw (@{ $storedquery->{'query'} } );
     #print "$thawedquery";
     #$Data::Dumper::Values = $query;
     #$Data::Dumper::Pair = " : ";
     #my $qdump = eval(Dumper($query));
-    print Dumper($dispatch);
+#    print Dumper(@dispatch);
     #my $newestchange = POSIX::strftime("%m/%d/%Y %H:%M:%S\n", $dispatch);
-#    print "the newest timestamp from the changes table is $dispatch\n";
-#    print "the average lag is $dispatch2\n";
+    print "the newest timestamp from the changes table is @dispatch\n";
+    print "the average lag is @dispatch2\n";
 
 #-------------------------------------------------------------------------------
 # another method for retrieving HoHoHoH
