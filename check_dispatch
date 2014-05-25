@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -w
 #===============================================================================
 #
 #         FILE: check_dispatch
@@ -9,7 +9,7 @@
 #               
 #
 #      OPTIONS: ---
-# REQUIREMENTS: WWW::Mechanize
+# REQUIREMENTS: WWW::Mechanize, JSON
 #         BUGS: ---
 #        NOTES: ---
 #       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
@@ -23,36 +23,61 @@
 use warnings;
 no warnings qw(uninitialized);
 
-# load the libwww module
+# load libwww module
 use LWP;
+
+# load JSON module
 use JSON;
-# load the Getopt::Long module for cli arguments
+use JSON::Path;
+
+# load Getopt::Long module for cli arguments
 use Getopt::Long;
 
-# load the Pod::Usage module for automatic documentation
+# load nagios utils module 
+#use lib utils.pm;
+#use utils qw(%ERRORS);
+
+# load Pod::Usage module for automatic documentation
 use Pod::Usage;
+
+# Mechanize calls the server
+use WWW::Mechanize;
+
+#Data Dump for Mech Response
 use Data::Dumper;
+
+#Storable for persistance 
+use Storable qw( freeze thaw );
+
 #-------------------------------------------------------------------------------
 # GLOBAL VARIABLES
 #-------------------------------------------------------------------------------
+# this hash is provided by module utils if nagios is present
+my %ERRORS=('OK'=>0,'WARNING'=>1,'CRITICAL'=>2,'UNKNOWN'=>3,'DEPENDENT'=>4);
+
+# filter null value params
+my @filtered_keys = ('freshest','stalest','median');
 
 # check user-agent
 my $agent = "nagios check_dispatch";
 
-# save x-meta-generator header with version info
+# save content-type header to validate json
 my $header = undef;
 
-# mediawiki url te checken
+# mediawiki url 
 my $siteurl = undef;    # this has to be a cli argument
 
 # url for api call to site statistics
 my $apiurl = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistics";
 
+# static JSON paths to request metric keys
+my $keypath = "query.statistics.dispatch.newest.timestamp";
+my $keypath2 = "query.statistics.dispatch.average.lag";
+
 my $debug    = undef;
 my $response = undef;
-
 my $help     = undef;
-my $version  = "0.3";
+my $version  = "0.1";
 my $realm    = undef;
 my $netloc   = undef;
 my $user     = undef;
@@ -77,7 +102,7 @@ GetOptions(
 # give version if asked and exit
 if ($revision) {
     print "$0 version: $version\n";
-    exit 0;
+    exit $ERRORS{'OK'};
 }
 
 # if help chosen, display it
@@ -100,6 +125,7 @@ if ( defined $debug ) {
     $ua->show_progress("true");
 }
 
+# concatenate base url and api url
 my $fullurl = $siteurl . $apiurl;
 
 # if we need to enter login info, else just get the url
@@ -120,22 +146,24 @@ if ( $response->is_success ) {
 
     # if the api call fails, then die
     if ( $header =~ m/json.*$/i  ) {
-            print "format:json\n"
+            print "format:json\n";
     }
     else {
         print "WARNING: This does not look like the correct site\n";
         print "$header\n" if defined $header;
-        exit 1;
+        exit $ERRORS{'WARNING'};
     }
 }
 else {
     print "WARNING: we got: ", $response->status_line,
       " when requesting $fullurl.
     Something went wrong fetching it.\n";
-    exit 1;
+    exit $ERRORS{'WARNING'};
 }
 
-use WWW::Mechanize;
+#-------------------------------------------------------------------------------
+# call the API
+#-------------------------------------------------------------------------------
 
 # create new mechanize object without autocheck
 my $mech = WWW::Mechanize->new( autocheck => 0, );
@@ -153,37 +181,50 @@ if ( defined $debug ) {
 $mech->get($fullurl);
 
 if ( $mech->success ) {
-    my $content        = $mech->content or Dumper $mech->response;
-    my $query = from_json( $content );
+    my $content = $mech->content or Dumper $mech->response;
 
-#    my %query;
-#    @filtered_keys = grep { exists $json_query{$_} } @filtered_keys;
-#    @query{@filtered_keys} = @json_query{@filtered_keys};
+    #traverse JSON path and decode value
+    my $jpath = JSON::Path->new($keypath2);
+    my $dispatch = $jpath->values($content);
     
-    my @stat; 
-    for my $k1 ( sort keys %$query ) {
+    #my $storedquery = freeze ( $query);
+    #my $thawedquery = thaw (@{ $storedquery->{'query'} } );
+    #print "$thawedquery";
+    #$Data::Dumper::Values = $query;
+    #$Data::Dumper::Pair = " : ";
+    #my $qdump = eval(Dumper($query));
+    print Dumper($dispatch);
+    #my $newestchange = POSIX::strftime("%m/%d/%Y %H:%M:%S\n", $dispatch);
+#    print "the newest timestamp from the changes table is $dispatch\n";
+#    print "the average lag is $dispatch2\n";
+
+#-------------------------------------------------------------------------------
+# another method for retrieving HoHoHoH
+#-------------------------------------------------------------------------------
+
+#    for  my $k1 ( sort keys %$query ) {
 #        print "$k1\n";
      
-        for my $k2 ( sort keys %{$query->{ $k1 }} ) {
+#        for my $k2 ( sort keys %{$query->{ $k1 }} ) {
 #            print "\t$k2\n";
      
-            for my $k3 ( sort keys %{$query->{ $k1 }->{ $k2 }} ) {
+#            for my $k3 ( sort keys %{$query->{ $k1 }->{ $k2 }} ) {
 #                print "\t\t$k3\n";
                
-	        for my $k4 ( sort keys %{$query->{ $k1}->{ $k2 }->{ $k3 }} ) {
+#	        for my $k4 ( sort keys %{$query->{ $k1}->{ $k2 }->{ $k3 }} ) {
 #                     print "\t\t$k4\n";
 
-                     for my $k5 ( sort keys %{$query->{ $k1}->{ $k2 }->{ $k3 }->{ $k4 }} ) {
-                         print "\t\t$k5 => $query->{ $k1 }->{ $k2 }->{ $k3 }->{ $k4 }->{ $k5 }\n";
-                      }
-                 }
-            }
-        }
-    }
+#                     for my $k5 ( sort keys %{$query->{ $k1}->{ $k2 }->{ $k3 }->{ $k4 }} ) {
+#                       print "\t\t$k5 => $query->{ $k1 }->{ $k2 }->{ $k3 }->{ $k4 }->{ $k5 }\n";
+#                      }
+#                 }
+#            }
+#        }
+#    }
 }
 else {
     print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
-    exit 1;
+    exit $ERRORS{'WARNING'};
 }
 
 
@@ -256,8 +297,6 @@ This check can fail because of network problems (no connectivity to the
 internet to check the mediawiki.org version, for instance). Use the --verbose
 true parameter to get better information if it fails.
 
-This check does not (yet) work behind a proxy server. Patches welcome!
-
 =head1 CONFIGURATION AND ENVIRONMENT
 
 Place the plugin in the plugin directory of the nagios server (usually,
@@ -287,11 +326,6 @@ something like perlbrew or, as a last resort, the cpan shell, to install it.
 None known yet.
 
 =head1 BUGS AND LIMITATIONS
-
-This check assumes that the download link of the mediawiki.org site is
-L<http://www.mediawiki.org/wiki/Download> and that the mediawiki sites will
-continue to use an x-meta-generator header with the version used by the sites.
-If those things change, the plugin will fail miserably.
 
 =head1 AUTHOR
 
