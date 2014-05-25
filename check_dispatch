@@ -23,6 +23,11 @@ use strict;
 use warnings;
 #no warnings qw(uninitialized);
 
+#time calculations
+use DateTime;
+use DateTime::Format::ISO8601;
+use DateTime::Format::Duration;
+use DateTime::Format::Strptime;
 # load libwww module
 use LWP;
 
@@ -193,31 +198,9 @@ if ( $mech->success ) {
     #my $storedquery = freeze ( $query);
     #my $thawedquery = thaw (@{ $storedquery->{'query'} } );
     #print "$thawedquery";
-    print "the newest timestamp from the changes table is @dispatch | lag=  @dispatch2 [s];[3];[10]\n";
-
-#-------------------------------------------------------------------------------
-# another method for retrieving HoHoHoH
-#-------------------------------------------------------------------------------
-
-#    for  my $k1 ( sort keys %$query ) {
-#        print "$k1\n";
-     
-#        for my $k2 ( sort keys %{$query->{ $k1 }} ) {
-#            print "\t$k2\n";
-     
-#            for my $k3 ( sort keys %{$query->{ $k1 }->{ $k2 }} ) {
-#                print "\t\t$k3\n";
-               
-#	        for my $k4 ( sort keys %{$query->{ $k1}->{ $k2 }->{ $k3 }} ) {
-#                     print "\t\t$k4\n";
-
-#                     for my $k5 ( sort keys %{$query->{ $k1}->{ $k2 }->{ $k3 }->{ $k4 }} ) {
-#                       print "\t\t$k5 => $query->{ $k1 }->{ $k2 }->{ $k3 }->{ $k4 }->{ $k5 }\n";
-#                      }
-#                 }
-#            }
-#        }
-#    }
+    my $timestamp = &format_timestamp(\@dispatch);
+    my $diff = &change_diff(\@dispatch);
+    print "the newest timestamp from the changes table is $timestamp , $diff ago | lag=  @dispatch2 [s];[3];[10]\n";
 }
 else {
     print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
@@ -227,6 +210,40 @@ else {
 sub json_path {
     JSON::Path->new($_[0]);
 }
+
+sub format_timestamp {
+   #get the timestamp from the dispatch object
+   my $date = $ { $_[0] } [0];
+   #create the MW timestamp input format
+   my $strpin = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
+   #put the timestamp in the DT object
+   my $dtin = $strpin->parse_datetime($date);
+   #create the MW timestamp output format
+   my $strpout = DateTime::Format::Strptime->new( pattern   => '%F %T');
+   #create the dt in the output format
+   $strpout->format_datetime($dtin);
+}
+
+sub change_diff {
+   #get the timestamp from the dispatch object
+   my $date = $ { $_[0] } [0];
+   #create the MW timestamp format
+   my $strp = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
+   #put the current time in the DT object with the MW format
+   my $dt1 = DateTime->now( formatter => $strp);
+   #put the timestamp in the DT object
+   my $dt2 = $strp->parse_datetime($date);
+   #calculate the duration
+   my $duration = $dt1 - $dt2;
+   #output the calculation in the format
+   my $format = DateTime::Format::Duration->new(
+       pattern => '%M minutes, %S seconds'
+   );
+   $format->format_duration($duration);
+}
+  # ISO8601
+  #$isonow = strftime("%Y%m%dT%H%M%S", localtime($now));
+  #$isonow - $_[0];
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #  Application Documentation
