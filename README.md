@@ -16,7 +16,7 @@ Also, retrieves average lag and puts it in a performance label
 tag for Nagios.
 
 ###OPTIONS: 
-    -H|--hostname 
+     -H|--hostname 
      web address of site hosting the mediawiki site;
      -n|--netloc
      hostname:port combination for webserver dns hostname. *NO* protocol (no
@@ -30,6 +30,8 @@ tag for Nagios.
      info of the http request;
      -h|--help
      this text;
+     -c|--critical 
+     critical status threshold for performance lag
 
 ###REQUIREMENTS: 
 WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration, 
