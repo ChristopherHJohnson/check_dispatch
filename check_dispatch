@@ -77,8 +77,7 @@ my $apiurl = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistic
 # concatenate base url and api url
 
 # static JSON paths to request metric keys
-my $keypath = "query.statistics.dispatch.newest.timestamp";
-my $keypath2 = "query.statistics.dispatch.average.lag";
+my @paths = ('query.statistics.dispatch.newest.timestamp','query.statistics.dispatch.average.lag');
 
 my $debug    = undef;
 my $response = undef;
@@ -89,7 +88,7 @@ my $netloc   = undef;
 my $user     = undef;
 my $passwd   = undef;
 my $revision = undef;
-
+my $content = undef;
 #-------------------------------------------------------------------------------
 # process cli arguments
 #-------------------------------------------------------------------------------
@@ -187,32 +186,33 @@ $mech->get($fullurl);
 
 if ( $mech->success ) {
     my $content = $mech->content or Dumper $mech->response;
-    
-    #traverse JSON path and decode value
-    my $jpath = &json_path($keypath);
-    my @dispatch = $jpath->values($content);
-    my $jpath2 = &json_path($keypath2);
-    my @dispatch2 = $jpath2->values($content);    
 
-    #my $storedquery = freeze ( $query);
-    #my $thawedquery = thaw (@{ $storedquery->{'query'} } );
-    #print "$thawedquery";
-    my $timestamp = &format_timestamp(\@dispatch);
-    my $diff = &change_diff(\@dispatch);
-    print "The newest timestamp from the changes table is $timestamp , $diff ago | lag=  @dispatch2 [s];[3];[10]\n";
+    #traverse JSON path and return values
+    my @values;
+    foreach my $path (@paths) {  
+       my $jpath = JSON::Path->new($path);
+       foreach my $i ($jpath) {
+          my @value = $jpath->values($content);
+          push @values, @value;
+       }    
+    }
+
+    #change MW timestamp to readable format 
+    my $timestamp = &format_timestamp($values[0]);
+    #get time elapsed since last site change
+    my $diff = &change_diff($values[0]);
+    
+    #output message to console
+    print "The newest timestamp from the changes table is $timestamp , $diff ago | lag=  $values[1] [s];[3];[10]\n";
 }
 else {
     print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
     exit $ERRORS{'WARNING'};
 }
 
-sub json_path {
-    JSON::Path->new($_[0]);
-}
-
 sub format_timestamp {
    #get the timestamp from the dispatch object
-   my $date = $ { $_[0] } [0];
+   my $date = $_[0];
    #create the MW timestamp input format
    my $strpin = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
    #put the timestamp in the DT object
@@ -225,7 +225,7 @@ sub format_timestamp {
 
 sub change_diff {
    #get the timestamp from the dispatch object
-   my $date = $ { $_[0] } [0];
+   my $date = $_[0];
    #create the MW timestamp format
    my $strp = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
    #put the current time in the DT object with the MW format
@@ -238,9 +238,6 @@ sub change_diff {
    my $format = DateTime::Format::Duration->new( pattern => '%M minutes, %S seconds' );
    $format->format_duration($duration);
 }
-  # ISO8601
-  #$isonow = strftime("%Y%m%dT%H%M%S", localtime($now));
-  #$isonow - $_[0];
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #  Application Documentation
