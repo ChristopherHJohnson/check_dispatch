@@ -140,7 +140,7 @@ if ( defined $user ) {
     $response = $ua->get($fullurl);
 }
 else {
-    $response = $ua->get($fullurl);
+    $response = $ua->head($fullurl);
 }
 
 # if the web request is succesful, proceed with check. Else exit with warning.
@@ -150,9 +150,9 @@ if ( $response->is_success ) {
 
     die "could not get header\n" unless defined $header;
 
-    # if the api call fails, then die
-    if ( $header =~ m/json.*$/i  ) {
-            print "format:json\n";
+    # if the head request does not return the json content type, then die
+    if ( $header =~ m/json./i  ) {
+            print "API URL OK\n";
     }
     else {
         print "WARNING: This does not look like the correct site\n";
