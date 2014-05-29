@@ -48,3 +48,12 @@ Wikimedia Deutschland
 25-05-2014
 ###REVISION: 
 0.1
+###LICENSE
+You can redistribute and/or modify this software under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later
+version; with the additional exemption that compiling, linking, and/or using OpenSSL is allowed.
+
+This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+See the COPYING file for the complete text of the GNU General Public License, version 3.
