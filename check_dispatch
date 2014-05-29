@@ -318,7 +318,9 @@ Place the plugin in the plugin directory of the nagios server (usually,
 /usr/local/nagios/libexec/), make the nagios user its owner and change the
 permissions to 775.  Also, see the check_dispatch.cfg file.
 
-For Puppet, see the icinga.pp manifest.  This requires the 3rd party Perl module.
+For Puppet, see the icinga.pp manifest.  
+This requires  a party Perl module and the Example42/Puppi module
+See git clone https://github.com/example42/puppi.git /etc/puppet/modules/puppi
 
 =head1 DEPENDENCIES
 
