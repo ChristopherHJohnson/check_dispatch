@@ -1,16 +1,16 @@
 # vim: set ts=2 sw=2 et :
 # misc/icinga.pp
- 
+
 class icinga::user {
     include nagios::group
     # FIXME: where does the dialout user group come from?
     # It should be included here somehow
- 
+
     group { 'icinga':
         ensure => present,
         name   => 'icinga',
     }
- 
+
     user { 'icinga':
         name       => 'icinga',
         home       => '/home/icinga',
@@ -22,9 +22,9 @@ class icinga::user {
         groups     => [ 'dialout', 'nagios' ]
     }
 }
- 
+
 class icinga::monitor {
- 
+
     include facilities::pdu_monitoring
     include icinga::ganglia::check
     include icinga::ganglia::ganglios
@@ -47,27 +47,28 @@ class icinga::monitor {
     include nagios::gsbmonitoring
     include nrpe
     include passwords::nagios::mysql
- 
+    include perl
+
     Class['icinga::monitor::packages'] -> Class['icinga::monitor::configuration::files'] -> Class['icinga::monitor::service']
- 
+
 }
- 
+
 # Nagios/icinga configuration files
- 
+
 class icinga::monitor::configuration::variables {
- 
+
     # This variable declares the monitoring hosts It is called master hosts as
     # monitor_host is already a service.
     $master_hosts = [ 'neon.wikimedia.org' ]
- 
+
     $icinga_config_dir = '/etc/icinga'
     $nagios_config_dir = '/etc/nagios'
- 
+
     # puppet_hosts.cfg must be first
     $puppet_files = [
         "${icinga::monitor::configuration::variables::icinga_config_dir}/puppet_hostgroups.cfg",
         "${icinga::monitor::configuration::variables::icinga_config_dir}/puppet_servicegroups.cfg"]
- 
+
     $static_files = [
         "${icinga::monitor::configuration::variables::icinga_config_dir}/puppet_hostextinfo.cfg",
         "${icinga::monitor::configuration::variables::icinga_config_dir}/puppet_services.cfg",
@@ -81,7 +82,7 @@ class icinga::monitor::configuration::variables {
         "${icinga::monitor::configuration::variables::icinga_config_dir}/resource.cfg",
         "${icinga::monitor::configuration::variables::icinga_config_dir}/timeperiods.cfg"]
 }
- 
+
 class icinga::monitor::apache {
     class {'webserver::php5': ssl => true,}
     ferm::service { 'icinga-https':
@@ -92,19 +93,19 @@ class icinga::monitor::apache {
       proto => 'tcp',
       port  => 80,
     }
- 
+
     include webserver::php5-gd
- 
+
     include passwords::ldap::wmf_cluster
     $proxypass = $passwords::ldap::wmf_cluster::proxypass
- 
+
     file { '/usr/share/icinga/htdocs/images/logos/ubuntu.png':
         source => 'puppet:///files/icinga/ubuntu.png',
         owner  => 'root',
         group  => 'root',
         mode   => '0644',
     }
- 
+
     # install the Icinga Apache site
     file { '/etc/apache2/sites-available/icinga.wikimedia.org':
         ensure  => present,
@@ -113,7 +114,7 @@ class icinga::monitor::apache {
         mode    => '0444',
         content => template('apache/sites/icinga.wikimedia.org.erb'),
     }
- 
+
     # remove icinga default config
     file { '/etc/icinga/apache2.conf':
         ensure => absent,
@@ -121,24 +122,24 @@ class icinga::monitor::apache {
     file { '/etc/apache2/conf.d/icinga.conf':
         ensure => absent,
     }
- 
+
     apache_site { 'icinga': name => 'icinga.wikimedia.org' }
     install_certificate{ 'icinga.wikimedia.org': ca => 'RapidSSL_CA.pem' }
     install_certificate{ 'icinga-admin.wikimedia.org': ca => 'RapidSSL_CA.pem' }
- 
+
 }
- 
+
 class icinga::monitor::checkpaging {
- 
+
     require icinga::monitor::packages
- 
+
     file {'/usr/lib/nagios/plugins/check_to_check_nagios_paging':
         source => 'puppet:///files/icinga/check_to_check_nagios_paging',
         owner  => 'root',
         group  => 'root',
         mode   => '0755',
     }
- 
+
     monitor_service { 'check_to_check_nagios_paging':
         description           => 'check_to_check_nagios_paging',
         check_command         => 'check_to_check_nagios_paging',
@@ -148,90 +149,90 @@ class icinga::monitor::checkpaging {
         critical              => false
     }
 }
- 
+
 class icinga::monitor::configuration::files {
- 
+
     # For all files dealing with icinga configuration
- 
+
     require icinga::monitor::packages
     require passwords::nagios::mysql
- 
+
     $nagios_mysql_check_pass = $passwords::nagios::mysql::mysql_check_pass
- 
+
     Class['icinga::monitor::configuration::variables'] -> Class['icinga::monitor::configuration::files']
- 
+
     # Icinga configuration files
- 
+
     file { '/etc/icinga/cgi.cfg':
         source => 'puppet:///files/icinga/cgi.cfg',
         owner  => 'root',
         group  => 'root',
         mode   => '0644',
     }
- 
+
     file { '/etc/icinga/icinga.cfg':
         source => 'puppet:///files/icinga/icinga.cfg',
         owner  => 'root',
         group  => 'root',
         mode   => '0644',
     }
- 
+
     file { '/etc/icinga/nsca_frack.cfg':
         source => 'puppet:///private/nagios/nsca_frack.cfg',
         owner  => 'root',
         group  => 'root',
         mode   => '0644',
     }
- 
+
     # TEMP: analytics eqiad cluster manual entries.
     # This has been removed since analytics cluster
     # udp2log instances are now puppetized.
     file { '/etc/icinga/analytics.cfg':
         ensure  => 'absent',
     }
- 
+
     file { '/etc/icinga/checkcommands.cfg':
         content => template('icinga/checkcommands.cfg.erb'),
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
     }
- 
+
     file { '/etc/icinga/contactgroups.cfg':
         source => 'puppet:///files/icinga/contactgroups.cfg',
         owner  => 'root',
         group  => 'root',
         mode   => '0644',
     }
- 
+
     file { '/etc/icinga/contacts.cfg':
         source => 'puppet:///private/nagios/contacts.cfg',
         owner  => 'root',
         group  => 'root',
         mode   => '0644',
     }
- 
+
     file { '/etc/icinga/misccommands.cfg':
         source => 'puppet:///files/icinga/misccommands.cfg',
         owner  => 'root',
         group  => 'root',
         mode   => '0644',
     }
- 
+
     file { '/etc/icinga/resource.cfg':
         source => 'puppet:///files/icinga/resource.cfg',
         owner  => 'root',
         group  => 'root',
         mode   => '0644',
     }
- 
+
     file { '/etc/icinga/timeperiods.cfg':
         source => 'puppet:///files/icinga/timeperiods.cfg',
         owner  => 'root',
         group  => 'root',
         mode   => '0644',
     }
- 
+
     file { '/etc/init.d/icinga':
         source => 'puppet:///files/icinga/icinga-init',
         owner  => 'root',
@@ -239,46 +240,46 @@ class icinga::monitor::configuration::files {
         mode   => '0755',
     }
 }
- 
+
 class icinga::monitor::files::misc {
 # Required files and directories
 # Must be loaded last
- 
+
     file { '/etc/icinga/conf.d':
         ensure => directory,
         owner  => 'root',
         group  => 'root',
         mode   => '0755',
     }
- 
+
     file { '/etc/nagios':
         ensure => directory,
         owner  => 'root',
         group  => 'root',
         mode   => '0755',
     }
- 
+
     file { '/var/cache/icinga':
         ensure => directory,
         owner  => 'icinga',
         group  => 'www-data',
         mode   => '0775',
     }
- 
+
     file { '/var/lib/nagios/rw':
         ensure => directory,
         owner  => 'icinga',
         group  => 'nagios',
         mode   => '0777',
     }
- 
+
     file { '/var/lib/icinga':
         ensure => directory,
         owner  => 'icinga',
         group  => 'www-data',
         mode   => '0755',
     }
- 
+
     # Script to purge resources for non-existent hosts
     file { '/usr/local/sbin/purge-nagios-resources.py':
         source => 'puppet:///files/icinga/purge-nagios-resources.py',
@@ -286,7 +287,7 @@ class icinga::monitor::files::misc {
         group  => 'root',
         mode   => '0755',
     }
- 
+
     # fix permissions on all individual service files
     exec { 'fix_nagios_perms':
         command => '/bin/chmod -R a+r /etc/nagios';
@@ -304,11 +305,11 @@ class icinga::monitor::files::misc {
         command => '/bin/chmod a+rw /var/lib/nagios/rw/nagios.cmd';
     }
 }
- 
+
 class icinga::monitor::files::nagios-plugins {
- 
+
     require icinga::monitor::packages
- 
+
     file { '/usr/lib/nagios':
         ensure => directory,
         owner  => 'root',
@@ -549,9 +550,9 @@ class icinga::monitor::files::nagios-plugins {
         group  => 'root',
         mode   => '0644',
     }
- 
+
     File <| tag == nagiosplugin |>
- 
+
     # WMF custom service checks
     file { '/usr/lib/nagios/plugins/check_mysql-replication.pl':
         source => 'puppet:///files/icinga/check_mysql-replication.pl',
@@ -573,12 +574,6 @@ class icinga::monitor::files::nagios-plugins {
     }
     file { '/usr/lib/nagios/plugins/check_bad_apaches':
         source => 'puppet:///files/icinga/check_bad_apaches',
-        owner  => 'root',
-        group  => 'root',
-        mode   => '0755',
-    }
-     file { '/usr/lib/nagios/plugins/check_dispatch':
-        source => 'puppet:///files/icinga/check_dispatch',
         owner  => 'root',
         group  => 'root',
         mode   => '0755',
@@ -633,62 +628,62 @@ class icinga::monitor::files::nagios-plugins {
     }
     # Include check_elasticsearch from elasticsearch module
     include elasticsearch::nagios::plugin
- 
+
     # some default configuration files conflict and should be removed
     file { '/etc/nagios-plugins/config/mailq.cfg':
         ensure => absent,
     }
- 
+
 }
- 
+
 class icinga::monitor::firewall {
     #ncsa on port 5667
     ferm::rule { 'ncsa_allowed':
         rule => 'saddr (127.0.0.1 $EQIAD_PRIVATE_ANALYTICS1_A_EQIAD $EQIAD_PRIVATE_ANALYTICS1_B_EQIAD $EQIAD_PRIVATE_ANALYTICS1_C_EQIAD $EQIAD_PRIVATE_ANALYTICS1_D_EQIAD $EQIAD_PRIVATE_LABS_HOSTS1_A_EQIAD $EQIAD_PRIVATE_LABS_HOSTS1_B_EQIAD $EQIAD_PRIVATE_LABS_HOSTS1_D_EQIAD $EQIAD_PRIVATE_LABS_SUPPORT1_C_EQIAD $EQIAD_PRIVATE_PRIVATE1_A_EQIAD $EQIAD_PRIVATE_PRIVATE1_B_EQIAD $EQIAD_PRIVATE_PRIVATE1_C_EQIAD $EQIAD_PRIVATE_PRIVATE1_D_EQIAD $EQIAD_PUBLIC_PUBLIC1_A_EQIAD $EQIAD_PUBLIC_PUBLIC1_B_EQIAD $EQIAD_PUBLIC_PUBLIC1_C_EQIAD $EQIAD_PUBLIC_PUBLIC1_D_EQIAD $ESAMS_PRIVATE_PRIVATE1_ESAMS $ESAMS_PUBLIC_PUBLIC_SERVICES $PMTPA_PRIVATE_PRIVATE $PMTPA_PRIVATE_VIRT_HOSTS $PMTPA_PUBLIC_PUBLIC_SERVICES $PMTPA_PUBLIC_PUBLIC_SERVICES_2 $PMTPA_PUBLIC_SANDBOX $PMTPA_PUBLIC_SQUID_LVS $ULSFO_PRIVATE_PRIVATE1_ULSFO $ULSFO_PUBLIC_PUBLIC1_ULSFO 208.80.155.0/27 10.64.40.0/24) proto tcp dport 5667 ACCEPT;'
     }
- 
+
     #snmptrap on port 162
     ferm::rule { 'snmptrap_allowed':
         rule => 'saddr  (127.0.0.1 $EQIAD_PRIVATE_ANALYTICS1_A_EQIAD $EQIAD_PRIVATE_ANALYTICS1_B_EQIAD $EQIAD_PRIVATE_ANALYTICS1_C_EQIAD $EQIAD_PRIVATE_ANALYTICS1_D_EQIAD $EQIAD_PRIVATE_LABS_HOSTS1_A_EQIAD $EQIAD_PRIVATE_LABS_HOSTS1_B_EQIAD $EQIAD_PRIVATE_LABS_HOSTS1_D_EQIAD $EQIAD_PRIVATE_LABS_SUPPORT1_C_EQIAD $EQIAD_PRIVATE_PRIVATE1_A_EQIAD $EQIAD_PRIVATE_PRIVATE1_B_EQIAD $EQIAD_PRIVATE_PRIVATE1_C_EQIAD $EQIAD_PRIVATE_PRIVATE1_D_EQIAD $EQIAD_PUBLIC_PUBLIC1_A_EQIAD $EQIAD_PUBLIC_PUBLIC1_B_EQIAD $EQIAD_PUBLIC_PUBLIC1_C_EQIAD $EQIAD_PUBLIC_PUBLIC1_D_EQIAD $ESAMS_PRIVATE_PRIVATE1_ESAMS $ESAMS_PUBLIC_PUBLIC_SERVICES $PMTPA_PRIVATE_PRIVATE $PMTPA_PRIVATE_VIRT_HOSTS $PMTPA_PUBLIC_PUBLIC_SERVICES $PMTPA_PUBLIC_PUBLIC_SERVICES_2 $PMTPA_PUBLIC_SANDBOX $PMTPA_PUBLIC_SQUID_LVS $ULSFO_PRIVATE_PRIVATE1_ULSFO $ULSFO_PUBLIC_PUBLIC1_ULSFO 208.80.155.0/27 10.64.40.0/24) proto udp dport 162 ACCEPT;'
     }
 }
- 
+
 class icinga::monitor::naggen {
- 
+
     # Naggen takes exported resources from hosts and creates nagios
     # configuration files
- 
+
     require icinga::monitor::packages
- 
+
     file { '/etc/icinga/puppet_hosts.cfg':
-        content => generate('/usr/local/bin/naggen', '--stdout', '--type', 'host'),
+        content => generate('/usr/local/bin/naggen2', '--type', 'hosts'),
         backup  => false,
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
     }
     file { '/etc/icinga/puppet_services.cfg':
-        content => generate('/usr/local/bin/naggen', '--stdout', '--type', 'service'),
+        content => generate('/usr/local/bin/naggen2', '--type', 'services'),
         backup  => false,
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
     }
     file { '/etc/icinga/puppet_hostextinfo.cfg':
-        content => generate('/usr/local/bin/naggen', '--stdout', '--type', 'hostextinfo'),
+        content => generate('/usr/local/bin/naggen2', '--type', 'hostextinfo'),
         backup  => false,
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
     }
- 
+
     # Fix permissions
- 
+
     file { $icinga::monitor::configuration::variables::puppet_files:
         ensure => present,
         mode   => '0644',
     }
- 
+
     # Collect all (virtual) resources
     Monitor_group <| |> {
         notify => Service[icinga],
@@ -699,52 +694,65 @@ class icinga::monitor::naggen {
     Monitor_service <| tag != 'nrpe' |> {
         notify => Service[icinga],
     }
- 
+
 }
- 
+
 # NSCA - Nagios Service Check Acceptor
 # package contains daemon and client script
 class icinga::nsca {
- 
+
     package { 'nsca':
         ensure => latest,
     }
- 
+
 }
- 
+
 # NSCA - daemon config
 class icinga::monitor::nsca::daemon {
- 
+
     system::role { 'icinga::nsca::daemon': description => 'Nagios Service Checks Acceptor Daemon' }
- 
+
     require icinga::nsca
- 
+
     file { '/etc/nsca.cfg':
         source => 'puppet:///private/icinga/nsca.cfg',
         owner  => 'root',
         mode   => '0400',
     }
- 
+
     service { 'nsca':
         ensure => running,
     }
 }
- 
+
 class icinga::monitor::packages {
- 
+
     # icinga: icinga itself
     # icinga-doc: files for the web-frontend
- 
+
     package { [ 'icinga', 'icinga-doc' ]:
         ensure => latest,
     }
- 
+    
+    # Perl modules needed by plugins
+    package { [
+         'libdatetime-perl', # manipulating dates, times and timestamps
+         'libdatetime-format-duration-perl', #Format and parse DateTime::Durations objects in perl
+         'libdatetime-format-strptime-perl',  #Perl module to parse and format strp and strf time patterns
+         'libdata-dumper-simple-perl', #Easily dump variables together with their names (Data::Dumper-like)
+         'libjson-perl', # module for manipulating JSON-formatted data
+         'libwww-mechanize-perl' , # module to automate interaction with websites
+       ]: ensure => present,
+    }
+    # Perl module for check_dispatch
+    perl::module { 'JSON::Path': }
+
 }
- 
+
 class icinga::monitor::service {
- 
+
     require icinga::monitor::apache
- 
+
     service { 'icinga':
         ensure    => running,
         hasstatus => false,
@@ -758,9 +766,9 @@ class icinga::monitor::service {
         ],
     }
 }
- 
+
 class icinga::monitor::snmp {
- 
+
     file { '/etc/snmp/snmptrapd.conf':
         source => 'puppet:///files/snmp/snmptrapd.conf.icinga',
         owner  => 'root',
@@ -791,22 +799,22 @@ class icinga::monitor::snmp {
         group  => 'root',
         mode   => '0755',
     }
- 
+
     # snmp tarp stuff
     generic::systemuser { 'snmptt':
         name   => 'snmptt',
         home   => '/var/spool/snmptt',
         groups => [ 'snmptt', 'nagios' ]
     }
- 
+
     package { 'snmpd':
         ensure => latest,
     }
- 
+
     package { 'snmptt':
         ensure => latest,
     }
- 
+
     service { 'snmptt':
         ensure     => running,
         hasstatus  => false,
@@ -817,7 +825,7 @@ class icinga::monitor::snmp {
             File['/etc/snmp/snmptrapd.conf']
         ],
     }
- 
+
     service { 'snmptrapd':
         ensure    => running,
         hasstatus => false,
@@ -826,13 +834,13 @@ class icinga::monitor::snmp {
             File['/etc/snmp/snmptrapd.conf']
         ],
     }
- 
+
     service { 'snmpd':
         ensure    => running,
         hasstatus => false,
         subscribe => File['/etc/init.d/snmpd'],
     }
- 
+
     # FIXME: smptt crashes periodically on precise
     cron { 'restart_snmptt':
         ensure  => present,
@@ -841,31 +849,31 @@ class icinga::monitor::snmp {
         hour    => [0, 4, 8, 12, 16, 20],
         minute  => 7,
     }
- 
+
 }
- 
+
 class icinga::ganglia::ganglios {
     include ganglia::collector::config
- 
+
     package { 'ganglios':
         ensure => 'installed',
     }
- 
+
     cron { 'ganglios-cron':
         ensure  => present,
         command => 'test -w /var/log/ganglia/ganglia_parser.log && /usr/sbin/ganglia_parser',
         user    => 'icinga',
         minute  => '*/2',
     }
- 
+
     file { '/var/lib/ganglia/xmlcache':
         ensure => directory,
         mode   => '0755',
         owner  => 'icinga',
     }
- 
+
 }
- 
+
 # == Class icinga::ganglia::check
 #
 # Installs check_ganglia package and sets up symlink into
@@ -880,14 +888,14 @@ class icinga::ganglia::check {
     package { 'check-ganglia':
         ensure  => 'installed',
     }
- 
+
     file { '/usr/lib/nagios/plugins/check_ganglia':
         ensure  => 'link',
         target  => '/usr/bin/check_ganglia',
         require => Package['check-ganglia'],
     }
 }
- 
+
 class icinga::monitor::logrotate {
     file { '/etc/logrotate.d/icinga':
         ensure => present,
@@ -895,8 +903,8 @@ class icinga::monitor::logrotate {
         mode   => '0444',
     }
 }
- 
+
 # global monitoring groups - formerly misc/nagios.pp
- 
+
 @monitor_group { 'misc_eqiad': description => 'eqiad misc servers' }
 @monitor_group { 'misc_pmtpa': description => 'pmtpa misc servers' }
