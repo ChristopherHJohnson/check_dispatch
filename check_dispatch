@@ -51,10 +51,10 @@ use Pod::Usage;
 use WWW::Mechanize;
 
 #Data Dump for Mech Response
-use Data::Dumper;
+use Data::Dumper::Simple;
 
 #Storable for persistance (option) 
-use Storable qw( freeze thaw );
+#use Storable qw( freeze thaw );
 
 #-------------------------------------------------------------------------------
 # GLOBAL VARIABLES
@@ -316,7 +316,9 @@ true parameter to get better information if it fails.
 
 Place the plugin in the plugin directory of the nagios server (usually,
 /usr/local/nagios/libexec/), make the nagios user its owner and change the
-permissions to 775.
+permissions to 775.  Also, see the check_dispatch.cfg file.
+
+For Puppet, see the icinga.pp manifest.  This requires the 3rd party Perl module.
 
 =head1 DEPENDENCIES
 
@@ -333,12 +335,13 @@ Christopher H. Johnson
 
 =head1 LICENCE AND COPYRIGHT
 
-This module is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself. See perldoc perlartistic.
+You can redistribute and/or modify this software under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 3 of the License, or (at your option) any later
+version; with the additional exemption that compiling, linking, and/or using OpenSSL is allowed.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+See the COPYING file for the complete text of the GNU General Public License, version 3.
 =cut
 

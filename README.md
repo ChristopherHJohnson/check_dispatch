@@ -36,6 +36,15 @@ tag for Nagios.
 ###REQUIREMENTS: 
 WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration, 
 DateTime::Format::Strptime 
+
+###CONFIGURATION AND ENVIRONMENT
+ 
+Place the plugin in the plugin directory of the nagios server (usually,
+/usr/local/nagios/libexec/), make the nagios user its owner and change the
+permissions to 775.  Also, see the check_dispatch.cfg file.
+ 
+For Puppet, see the icinga.pp manifest.  This requires the 3rd party Perl module.
+
 ###BUGS: ---
 ###NOTES: ---
 ###AUTHOR: 
