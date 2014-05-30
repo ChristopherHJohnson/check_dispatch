@@ -5,20 +5,20 @@
 #
 #        USAGE: check_dispatch -H http://www.wikidata.org
 #
-#  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.  
-#               Retrieves newest change timestamp and diffs against current time.  
-#               Also, retrieves average lag and puts it in a performance label 
+#  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.
+#               Retrieves newest change timestamp and diffs against current time.
+#               Also, retrieves average lag and puts it in a performance label
 #               tag for Nagios.
 #
 #      OPTIONS: ---
-# REQUIREMENTS: WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration, 
-#               DateTime::Format::Strptime 
+# REQUIREMENTS: WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration,
+#               DateTime::Format::Strptime
 #         BUGS: ---
 #        NOTES: ---
 #       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
 #      COMPANY:
 #      VERSION: 0.1
-#      CREATED: 
+#      CREATED:
 #     REVISION: ---
 #===============================================================================
 
@@ -40,21 +40,11 @@ use JSON::Path;
 # load Getopt::Long module for cli arguments
 use Getopt::Long;
 
-# load nagios utils module 
-#use lib utils.pm;
-#use utils qw(%ERRORS);
-
 # load Pod::Usage module for automatic documentation
 use Pod::Usage;
 
-# Mechanize calls the server
-use WWW::Mechanize;
-
 #Data Dump for Mech Response
-use Data::Dumper::Simple;
-
-#Storable for persistance (option) 
-#use Storable qw( freeze thaw );
+use Data::Dumper;
 
 #-------------------------------------------------------------------------------
 # GLOBAL VARIABLES
@@ -68,13 +58,11 @@ my $agent = "nagios check_dispatch";
 # save content-type header to validate json
 my $header = undef;
 
-# mediawiki url 
+# mediawiki url
 my $siteurl = undef;    # this has to be a cli argument
 
 # url for api call to site statistics
 my $apiurl = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistics";
-
-# concatenate base url and api url
 
 # static JSON paths to request metric keys
 my @paths = ('query.statistics.dispatch.newest.timestamp','query.statistics.dispatch.average.lag');
@@ -82,14 +70,14 @@ my @paths = ('query.statistics.dispatch.newest.timestamp','query.statistics.disp
 my $debug    = undef;
 my $response = undef;
 my $help     = undef;
-my $version  = "0.1";
+my $version  = "0.2";
 my $realm    = undef;
 my $netloc   = undef;
 my $user     = undef;
 my $passwd   = undef;
 my $revision = undef;
 my $content = undef;
-my $critical = 10;
+my $critical = 60;
 #-------------------------------------------------------------------------------
 # process cli arguments
 #-------------------------------------------------------------------------------
@@ -125,8 +113,8 @@ pod2usage() unless $siteurl;
 my $ua = LWP::UserAgent->new;
 $ua->agent($agent);
 
-# do not wait for ever, after 20 seconds give up
-$ua->timeout(20);
+# do not wait for ever, after 10 seconds give up
+$ua->timeout(10);
 
 if ( defined $debug ) {
     $ua->show_progress("true");
@@ -141,7 +129,7 @@ if ( defined $user ) {
     $response = $ua->get($fullurl);
 }
 else {
-    $response = $ua->head($fullurl);
+    $response = $ua->get($fullurl);
 }
 
 # if the web request is succesful, proceed with check. Else exit with warning.
@@ -160,83 +148,57 @@ if ( $response->is_success ) {
         print "$header\n" if defined $header;
         exit $ERRORS{'WARNING'};
     }
-}
-else {
-    print "WARNING: we got: ", $response->status_line,
-      " when requesting $fullurl.
-    Something went wrong fetching it.\n";
-    exit $ERRORS{'WARNING'};
-}
 
-#-------------------------------------------------------------------------------
-# call the API with Mechanize
-#-------------------------------------------------------------------------------
-# create new mechanize object without autocheck
-my $mech = WWW::Mechanize->new( autocheck => 0, );
-
-# set another user-agent, mediawiki.org blocks libwww-perl (if they think this
-# helps ...)
-$mech->agent($agent);
-
-# show debugging if verbose is on
-if ( defined $debug ) {
-    $mech->show_progress(1);
-}
-
-# get the page
-$mech->get($fullurl);
-
-if ( $mech->success ) {
-    my $content = $mech->content or Dumper $mech->response;
+    my $content = $response->content or Dumper $response;
 
     #traverse JSON path and return values
     my @values;
-    foreach my $path (@paths) {  
+    foreach my $path (@paths) {
        my $jpath = JSON::Path->new($path);
        foreach my $i ($jpath) {
           my @value = $jpath->values($content);
           push @values, @value;
-       }    
+       }
     }
 
-    #change MW timestamp to readable format 
+    # change MW timestamp to readable format
     my $timestamp = &format_timestamp($values[0]);
-    #get time elapsed since last site change
+    # get time elapsed since last site change
     my $diff = &change_diff($values[0]);
-    
-    #output message to console
+
+    # output message to console
     print "Newest timestamp from the changes table is $timestamp , $diff ago | lag=  $values[1]s;3;", $critical, ";\n";
 }
 else {
-    print "WARNING: webserver $fullurl returned ", $mech->status, "\n";
+    print "WARNING: webserver $siteurl returned ", $response->status_line, "\n";
     exit $ERRORS{'WARNING'};
 }
 
 sub format_timestamp {
-   #get the timestamp from the dispatch object
+   # get the timestamp from the dispatch object
    my $date = $_[0];
-   #create the MW timestamp input format
+   # create the MW timestamp input format
    my $strpin = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
-   #put the timestamp in the DT object
+   # put the timestamp in the DT object
    my $dtin = $strpin->parse_datetime($date);
-   #create the MW timestamp output format
+   # create the MW timestamp output format
    my $strpout = DateTime::Format::Strptime->new( pattern   => '%F %T');
-   #create the dt in the output format
+   # create the dt in the output format
    $strpout->format_datetime($dtin);
 }
 
 sub change_diff {
-   #get the timestamp from the dispatch object
+   # get the timestamp from the dispatch object
    my $date = $_[0];
-   #create the MW timestamp format
+   # create the MW timestamp format
    my $strp = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
-   #put the current time in the DT object with the MW format
+   # put the current time in the DT object with the MW format
    my $dt1 = DateTime->now( formatter => $strp);
-   #put the timestamp in the DT object
+   # put the timestamp in the DT object
    my $dt2 = $strp->parse_datetime($date);
-   #calculate the duration
+   # calculate the duration
    my $duration = $dt1 - $dt2;
-   #output the calculation in the format
+   # output the calculation in the format
    my $format = DateTime::Format::Duration->new( pattern => '%M minutes, %S seconds' );
    $format->format_duration($duration);
 }
@@ -247,7 +209,7 @@ sub change_diff {
 
 =head1 NAME
 
-check_dispatch - check dispatch stats 
+check_dispatch - check dispatch stats
 
 =head1 VERSION
 
@@ -255,8 +217,8 @@ This documentation refers to <check_dispatch>
 
 =head1 USAGE
 
-check_dispatch -H http://www.example.com [-v true] [-n netlocation -r
-realm -u username -p password
+check_dispatch -H http://www.wikidata.org [-v true] [-n netlocation -r
+realm -u username -p password -c critlaglimit
 
 =head1 REQUIRED ARGUMENTS
 
@@ -305,7 +267,7 @@ for the site http://www.example.com would be www.example.com:80, without the
 http:// part which refers to the web protocol.
 
 For the other 3 arguments (realm, username and password) please refer to
-http://en.wikipedia.org/wiki/Basic_access_authentication 
+http://en.wikipedia.org/wiki/Basic_access_authentication
 
 =head1 DIAGNOSTICS
 
@@ -318,9 +280,7 @@ Place the plugin in the plugin directory of the nagios server (usually,
 /usr/local/nagios/libexec/), make the nagios user its owner and change the
 permissions to 775.  Also, see the check_dispatch.cfg file.
 
-For Puppet, see the icinga.pp manifest.  
-This requires  a party Perl module and the Example42/Puppi module
-See git clone https://github.com/example42/puppi.git /etc/puppet/modules/puppi
+For Puppet, see the icinga.pp manifest.
 
 =head1 DEPENDENCIES
 
