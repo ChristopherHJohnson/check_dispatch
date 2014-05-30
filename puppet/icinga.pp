@@ -47,7 +47,6 @@ class icinga::monitor {
     include nagios::gsbmonitoring
     include nrpe
     include passwords::nagios::mysql
-    include perl
 
     Class['icinga::monitor::packages'] -> Class['icinga::monitor::configuration::files'] -> Class['icinga::monitor::service']
 
@@ -742,10 +741,11 @@ class icinga::monitor::packages {
          'libdata-dumper-simple-perl', #Easily dump variables together with their names (Data::Dumper-like)
          'libjson-perl', # module for manipulating JSON-formatted data
          'libwww-mechanize-perl' , # module to automate interaction with websites
+         'libjson-path-perl_0.205-1_all.deb' , search nested hashref/arrayref structures using JSONPath
+         'libexporter-tiny-perl_0.038-1_all.deb' , an exporter with the features of Sub::Exporter but only core dependencies
+         'liblv-perl_0.006-1_all.deb' ,  makes lvalue subroutines easy
        ]: ensure => present,
     }
-    # Perl module for check_dispatch
-    perl::module { 'JSON::Path': }
 
 }
 
