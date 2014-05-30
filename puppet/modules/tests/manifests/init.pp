@@ -1,4 +1,15 @@
 class tests {
+file { '/packages':
+      ensure   => directory,
+    before   => [
+             File ['/packages/libjson-path-perl_0.205-1_all.deb'],
+             File ['/packages/libexporter-tiny-perl_0.038-1_all.deb'],
+             File ['/packages/liblv-perl_0.006-1_all.deb'],
+             Exec ['dpkg -i libjson-path-perl_0.205-1_all.deb libexporter-tiny-perl_0.038-1_all.deb liblv-perl_0.006-1_all.deb'],
+             ],
+    }
+
+
    # Perl modules needed by plugins
     package { [
          'libdatetime-perl', # manipulating dates, times and timestamps
@@ -7,9 +18,6 @@ class tests {
          'libdata-dumper-simple-perl', #Easily dump variables together with their names (Data::Dumper-like)
          'libjson-perl', # module for manipulating JSON-formatted data
          'libwww-mechanize-perl' , # module to automate interaction with websites
-         'libjson-path-perl_0.205-1_all.deb' , search nested hashref/arrayref structures using JSONPath
-         'libexporter-tiny-perl_0.038-1_all.deb' , an exporter with the features of Sub::Exporter but only core dependencies
-         'liblv-perl_0.006-1_all.deb' ,  makes lvalue subroutines easy
        ]: ensure => present,
     }
 }
