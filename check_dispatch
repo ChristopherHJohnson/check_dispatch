@@ -3,7 +3,7 @@
 #
 #         FILE: check_dispatch
 #
-#        USAGE: check_dispatch -H http://www.wikidata.org
+#        USAGE: check_dispatch -H https://www.wikidata.org
 #
 #  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.
 #               Retrieves newest change timestamp and diffs against current time.
@@ -11,13 +11,13 @@
 #               tag for Nagios.
 #
 #      OPTIONS: ---
-# REQUIREMENTS: WWW::Mechanize, JSON , JSON::Path , DateTime::Format::Duration,
+# REQUIREMENTS: JSON , JSON::Path , DateTime::Format::Duration,
 #               DateTime::Format::Strptime
 #         BUGS: ---
 #        NOTES: ---
 #       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
 #      COMPANY:
-#      VERSION: 0.1
+#      VERSION: 0.2
 #      CREATED:
 #     REVISION: ---
 #===============================================================================
@@ -43,7 +43,7 @@ use Getopt::Long;
 # load Pod::Usage module for automatic documentation
 use Pod::Usage;
 
-#Data Dump for Mech Response
+#Data Dump for Response
 use Data::Dumper;
 
 #-------------------------------------------------------------------------------
@@ -132,7 +132,7 @@ else {
     $response = $ua->get($fullurl);
 }
 
-# if the web request is succesful, proceed with check. Else exit with warning.
+# if the web request is successful, proceed with check. Else exit with warning.
 if ( $response->is_success ) {
 
     $header = $response->header("Content-Type");
@@ -163,11 +163,20 @@ if ( $response->is_success ) {
 
     # change MW timestamp to readable format
     my $timestamp = &format_timestamp($values[0]);
+
     # get time elapsed since last site change
     my $diff = &change_diff($values[0]);
 
     # output message to console
     print "Newest timestamp from the changes table is $timestamp , $diff ago | lag=  $values[1]s;3;", $critical, ";\n";
+
+    if ($values[1] <= $critical) {
+        exit $ERRORS{'OK'};
+    }
+    else {
+        print "Lag is CRITICAL\n";
+        exit $ERRORS{'CRITICAL'};
+    }
 }
 else {
     print "WARNING: webserver $siteurl returned ", $response->status_line, "\n";
