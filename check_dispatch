@@ -26,9 +26,10 @@ use strict;
 use warnings;
 
 #time calculations
-use DateTime;
-use DateTime::Format::Duration;
-use DateTime::Format::Strptime;
+#use DateTime;
+#use DateTime::Format::Duration;
+#use DateTime::Format::Strptime;
+use Time::Seconds;
 
 # load libwww module
 use LWP;
@@ -65,7 +66,7 @@ my $siteurl = undef;    # this has to be a cli argument
 my $apiurl = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistics";
 
 # static JSON paths to request metric keys
-my @paths = ('query.statistics.dispatch.newest.timestamp','query.statistics.dispatch.median.lag');
+my @paths = ('query.statistics.dispatch.stalest.lag', 'query.statistics.dispatch.median.lag');
 
 my $debug    = undef;
 my $response = undef;
@@ -161,22 +162,28 @@ if ( $response->is_success ) {
           push @values, @value;
        }
     }
-
+    
+    #convert seconds to minutes
+    my @minvalues;
+    foreach (@values) {
+       my $val = Time::Seconds->new($_);
+       push @minvalues, $val->minutes;
+    }
     # change MW timestamp to readable format
-    my $timestamp = &format_timestamp($values[0]);
+ #   my $timestamp = &format_timestamp($values[0]);
 
     # get time elapsed since last site change
-    my $diff = &change_diff($values[0]);
+ #   my $diff = &change_diff($values[0]);
 
     # output message to console
-    print "Newest timestamp from the changes table is $timestamp , $diff ago | lag=  $values[1]s;3;", $critical, ";\n";
+    print "Median Dispatch Lag is now $minvalues[1] minutes , Stalest Dispatch Lag = $minvalues[0] minutes |median lag=  $values[1]s;3;", $critical, ";\n";
 
     if ($values[1] > $critical) {
-        print "CRITICAL: Lag is greater than 15 minutes\n";
+        print "CRITICAL: Median Dispatch Lag is greater than 15 minutes\n";
         exit $ERRORS{'CRITICAL'};
     }
     elsif ($values[1] > $warning){
-        print "WARNING: Lag is greater than 1 minute\n";
+        print "WARNING: Median Dispatch Lag is greater than 1 minute\n";
         exit $ERRORS{'WARNING'};
     }
     else {
