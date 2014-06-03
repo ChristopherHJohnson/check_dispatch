@@ -65,19 +65,20 @@ my $siteurl = undef;    # this has to be a cli argument
 my $apiurl = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistics";
 
 # static JSON paths to request metric keys
-my @paths = ('query.statistics.dispatch.newest.timestamp','query.statistics.dispatch.average.lag');
+my @paths = ('query.statistics.dispatch.newest.timestamp','query.statistics.dispatch.median.lag');
 
 my $debug    = undef;
 my $response = undef;
 my $help     = undef;
-my $version  = "0.2";
+my $version  = "0.3";
 my $realm    = undef;
 my $netloc   = undef;
 my $user     = undef;
 my $passwd   = undef;
 my $revision = undef;
 my $content = undef;
-my $critical = 60;
+my $critical = 900;
+my $warning = 60;
 #-------------------------------------------------------------------------------
 # process cli arguments
 #-------------------------------------------------------------------------------
@@ -170,12 +171,16 @@ if ( $response->is_success ) {
     # output message to console
     print "Newest timestamp from the changes table is $timestamp , $diff ago | lag=  $values[1]s;3;", $critical, ";\n";
 
-    if ($values[1] <= $critical) {
-        exit $ERRORS{'OK'};
+    if ($values[1] >= $critical) {
+        print "Lag is greater than 15 minutes\n";
+        exit $ERRORS{'CRITICAL'};
+    }
+    elsif ($values[1] >= $warning){
+        print "Warning Lag is greater than 1 minute\n";
+        exit $ERRORS{'WARNING'};
     }
     else {
-        print "Lag is CRITICAL\n";
-        exit $ERRORS{'CRITICAL'};
+        exit $ERRORS{'OK'};
     }
 }
 else {
@@ -293,7 +298,7 @@ For Puppet, see the icinga.pp manifest.
 
 =head1 DEPENDENCIES
 
-This plugin requires the WWW::Mechanize module, JSON::Path and several DateTime modules
+This plugin requires JSON::Path and several DateTime modules
 
 =head1 INCOMPATIBILITIES
 
