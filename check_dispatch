@@ -171,12 +171,12 @@ if ( $response->is_success ) {
     # output message to console
     print "Newest timestamp from the changes table is $timestamp , $diff ago | lag=  $values[1]s;3;", $critical, ";\n";
 
-    if ($values[1] >= $critical) {
-        print "Lag is greater than 15 minutes\n";
+    if ($values[1] > $critical) {
+        print "CRITICAL: Lag is greater than 15 minutes\n";
         exit $ERRORS{'CRITICAL'};
     }
-    elsif ($values[1] >= $warning){
-        print "Warning Lag is greater than 1 minute\n";
+    elsif ($values[1] > $warning){
+        print "WARNING: Lag is greater than 1 minute\n";
         exit $ERRORS{'WARNING'};
     }
     else {
