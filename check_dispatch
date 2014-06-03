@@ -17,7 +17,7 @@
 #        NOTES: ---
 #       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
 #      COMPANY:
-#      VERSION: 0.2
+#      VERSION: 0.3
 #      CREATED:
 #     REVISION: ---
 #===============================================================================
@@ -140,7 +140,7 @@ if ( $response->is_success ) {
 
     die "could not get header\n" unless defined $header;
 
-    # if the head request does not return the json content type, then die
+    # if the header does not return the json content type, then exit
     if ( $header =~ m/json./i  ) {
             print "API URL OK -";
     }
@@ -189,30 +189,19 @@ else {
 }
 
 sub format_timestamp {
-   # get the timestamp from the dispatch object
    my $date = $_[0];
-   # create the MW timestamp input format
    my $strpin = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
-   # put the timestamp in the DT object
    my $dtin = $strpin->parse_datetime($date);
-   # create the MW timestamp output format
    my $strpout = DateTime::Format::Strptime->new( pattern   => '%F %T');
-   # create the dt in the output format
    $strpout->format_datetime($dtin);
 }
 
 sub change_diff {
-   # get the timestamp from the dispatch object
    my $date = $_[0];
-   # create the MW timestamp format
    my $strp = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
-   # put the current time in the DT object with the MW format
    my $dt1 = DateTime->now( formatter => $strp);
-   # put the timestamp in the DT object
    my $dt2 = $strp->parse_datetime($date);
-   # calculate the duration
    my $duration = $dt1 - $dt2;
-   # output the calculation in the format
    my $format = DateTime::Format::Duration->new( pattern => '%M minutes, %S seconds' );
    $format->format_duration($duration);
 }
@@ -231,7 +220,7 @@ This documentation refers to <check_dispatch>
 
 =head1 USAGE
 
-check_dispatch -H http://www.wikidata.org [-v true] [-n netlocation -r
+check_dispatch -H https://www.wikidata.org [-v true] [-n netlocation -r
 realm -u username -p password -c critlaglimit
 
 =head1 REQUIRED ARGUMENTS
