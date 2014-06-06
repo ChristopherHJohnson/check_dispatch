@@ -6,9 +6,6 @@
 #        USAGE: check_dispatch -H https://www.wikidata.org
 #
 #  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.
-#               Retrieves newest change timestamp and diffs against current time.
-#               Also, retrieves average lag and puts it in a performance label
-#               tag for Nagios.
 #
 #      OPTIONS: ---
 # REQUIREMENTS: JSON , JSON::Path ,
@@ -267,7 +264,7 @@ For Puppet, see the icinga.pp manifest.
 
 =head1 DEPENDENCIES
 
-This plugin requires JSON::Path and several DateTime modules
+This plugin requires JSON::Path
 
 =head1 INCOMPATIBILITIES
 
