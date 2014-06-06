@@ -6,13 +6,9 @@
 #        USAGE: check_dispatch -H https://www.wikidata.org
 #
 #  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.
-#               Retrieves newest change timestamp and diffs against current time.
-#               Also, retrieves average lag and puts it in a performance label
-#               tag for Nagios.
 #
 #      OPTIONS: ---
-# REQUIREMENTS: JSON , JSON::Path , DateTime::Format::Duration,
-#               DateTime::Format::Strptime
+# REQUIREMENTS: JSON , JSON::Path ,
 #         BUGS: ---
 #        NOTES: ---
 #       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
@@ -26,9 +22,6 @@ use strict;
 use warnings;
 
 #time calculations
-#use DateTime;
-#use DateTime::Format::Duration;
-#use DateTime::Format::Strptime;
 use Time::Seconds;
 
 # load libwww module
@@ -162,28 +155,23 @@ if ( $response->is_success ) {
           push @values, @value;
        }
     }
-    
+
     #convert seconds to minutes
     my @minvalues;
     foreach (@values) {
        my $val = Time::Seconds->new($_);
-       push @minvalues, $val->minutes;
+       push @minvalues, sprintf ("%.2f",$val->minutes);
     }
-    # change MW timestamp to readable format
- #   my $timestamp = &format_timestamp($values[0]);
-
-    # get time elapsed since last site change
- #   my $diff = &change_diff($values[0]);
 
     # output message to console
     print "Median Dispatch Lag is now $minvalues[1] minutes , Stalest Dispatch Lag = $minvalues[0] minutes |median lag=  $values[1]s;3;", $critical, ";\n";
 
     if ($values[1] > $critical) {
-        print "CRITICAL: Median Dispatch Lag is greater than 15 minutes\n";
+        print "CRITICAL: Dispatch Lag is greater than " , $critical, " seconds \n";
         exit $ERRORS{'CRITICAL'};
     }
     elsif ($values[1] > $warning){
-        print "WARNING: Median Dispatch Lag is greater than 1 minute\n";
+        print "WARNING: Dispatch Lag is greater than " , $warning, " seconds\n";
         exit $ERRORS{'WARNING'};
     }
     else {
@@ -193,24 +181,6 @@ if ( $response->is_success ) {
 else {
     print "WARNING: webserver $siteurl returned ", $response->status_line, "\n";
     exit $ERRORS{'WARNING'};
-}
-
-sub format_timestamp {
-   my $date = $_[0];
-   my $strpin = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
-   my $dtin = $strpin->parse_datetime($date);
-   my $strpout = DateTime::Format::Strptime->new( pattern   => '%F %T');
-   $strpout->format_datetime($dtin);
-}
-
-sub change_diff {
-   my $date = $_[0];
-   my $strp = DateTime::Format::Strptime->new( pattern   => '%Y%m%d%H%M%S');
-   my $dt1 = DateTime->now( formatter => $strp);
-   my $dt2 = $strp->parse_datetime($date);
-   my $duration = $dt1 - $dt2;
-   my $format = DateTime::Format::Duration->new( pattern => '%M minutes, %S seconds' );
-   $format->format_duration($duration);
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -294,7 +264,7 @@ For Puppet, see the icinga.pp manifest.
 
 =head1 DEPENDENCIES
 
-This plugin requires JSON::Path and several DateTime modules
+This plugin requires JSON::Path
 
 =head1 INCOMPATIBILITIES
 
