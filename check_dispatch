@@ -8,7 +8,7 @@
 #  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.
 #
 #      OPTIONS: ---
-# REQUIREMENTS: JSON , JSON::Path ,
+# REQUIREMENTS: JSON 
 #         BUGS: ---
 #        NOTES: ---
 #       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
@@ -29,7 +29,7 @@ use LWP;
 
 # load JSON module
 use JSON;
-use JSON::Path;
+#use JSON::Path;
 
 # load Getopt::Long module for cli arguments
 use Getopt::Long;
@@ -57,9 +57,6 @@ my $siteurl = undef;    # this has to be a cli argument
 
 # url for api call to site statistics
 my $apiurl = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistics";
-
-# static JSON paths to request metric keys
-my @paths = ('query.statistics.dispatch.stalest.lag', 'query.statistics.dispatch.median.lag');
 
 my $debug    = undef;
 my $response = undef;
@@ -146,22 +143,18 @@ if ( $response->is_success ) {
 
     my $content = $response->content or Dumper $response;
 
-    #traverse JSON path and return values
-    my @values;
-    foreach my $path (@paths) {
-       my $jpath = JSON::Path->new($path);
-       foreach my $i ($jpath) {
-          my @value = $jpath->values($content);
-          push @values, @value;
-       }
-    }
+#decode JSON and return values
+my $stats = decode_json($content);
+my $stalest_lag = $stats->{query}->{statistics}->{dispatch}->{stalest}->{lag};
+my $median_lag = $stats->{query}->{statistics}->{dispatch}->{median}->{lag};
 
-    #convert seconds to minutes
-    my @minvalues;
-    foreach (@values) {
+#convert seconds to minutes
+   my @minvalues;
+   my @values = ($stalest_lag, $median_lag);
+   foreach (@values) {
        my $val = Time::Seconds->new($_);
        push @minvalues, sprintf ("%.2f",$val->minutes);
-    }
+   }
 
     # output message to console
     print "Median Dispatch Lag is now $minvalues[1] minutes , Stalest Dispatch Lag = $minvalues[0] minutes |median lag=  $values[1]s;3;", $critical, ";\n";
@@ -172,7 +165,7 @@ if ( $response->is_success ) {
     }
     elsif ($values[1] > $warning){
         print "WARNING: Dispatch Lag is greater than " , $warning, " seconds\n";
-        exit $ERRORS{'WARNING'};
+    exit $ERRORS{'WARNING'};
     }
     else {
         exit $ERRORS{'OK'};
