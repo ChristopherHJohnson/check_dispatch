@@ -8,12 +8,12 @@
 #  DESCRIPTION: nagios plugin to check dispatch stats on Wikidata.
 #
 #      OPTIONS: ---
-# REQUIREMENTS: JSON 
+# REQUIREMENTS: JSON
 #         BUGS: ---
 #        NOTES: ---
 #       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
 #      COMPANY:
-#      VERSION: 0.3
+#      VERSION: 0.4
 #      CREATED:
 #     REVISION: ---
 #===============================================================================
@@ -29,7 +29,6 @@ use LWP;
 
 # load JSON module
 use JSON;
-#use JSON::Path;
 
 # load Getopt::Long module for cli arguments
 use Getopt::Long;
@@ -61,7 +60,7 @@ my $apiurl = "/w/api.php?action=query&meta=siteinfo&format=json&siprop=statistic
 my $debug    = undef;
 my $response = undef;
 my $help     = undef;
-my $version  = "0.3";
+my $version  = "0.4";
 my $realm    = undef;
 my $netloc   = undef;
 my $user     = undef;
@@ -69,7 +68,7 @@ my $passwd   = undef;
 my $revision = undef;
 my $content = undef;
 my $critical = 900;
-my $warning = 60;
+my $warning = 120;
 #-------------------------------------------------------------------------------
 # process cli arguments
 #-------------------------------------------------------------------------------
@@ -84,6 +83,7 @@ GetOptions(
     'v|verbose'    => \$debug,
     'V|version'    => \$revision,
     'c|critical=s'   => \$critical,
+    'w|warning=s'   => \$warning,
 );
 
 # give version if asked and exit
@@ -149,21 +149,20 @@ my $stalest_lag = $stats->{query}->{statistics}->{dispatch}->{stalest}->{lag};
 my $median_lag = $stats->{query}->{statistics}->{dispatch}->{median}->{lag};
 
 #convert seconds to minutes
-   my @minvalues;
-   my @values = ($stalest_lag, $median_lag);
-   foreach (@values) {
-       my $val = Time::Seconds->new($_);
-       push @minvalues, sprintf ("%.2f",$val->minutes);
+   my @lag_mins;
+   my @lag_secs = ($stalest_lag, $median_lag);
+   foreach (@lag_secs) {
+       my $dtval = Time::Seconds->new($_);
+       push @lag_mins, sprintf ("%.2f",$dtval->minutes);
    }
 
-    # output message to console
-    print "Median Dispatch Lag is now $minvalues[1] minutes , Stalest Dispatch Lag = $minvalues[0] minutes |median lag=  $values[1]s;3;", $critical, ";\n";
+    print "Median Dispatch Lag is now $lag_mins[1] minutes , Stalest Dispatch Lag = $lag_mins[0] minutes |median lag=  $lag_secs[1]s;3;", $critical, ";\n";
 
-    if ($values[1] > $critical) {
+    if ($lag_secs[1] > $critical) {
         print "CRITICAL: Dispatch Lag is greater than " , $critical, " seconds \n";
         exit $ERRORS{'CRITICAL'};
     }
-    elsif ($values[1] > $warning){
+    elsif ($lag_secs[1] > $warning){
         print "WARNING: Dispatch Lag is greater than " , $warning, " seconds\n";
     exit $ERRORS{'WARNING'};
     }
@@ -190,8 +189,8 @@ This documentation refers to <check_dispatch>
 
 =head1 USAGE
 
-check_dispatch -H https://www.wikidata.org [-v true] [-n netlocation -r
-realm -u username -p password -c critlaglimit
+check_dispatch -H hostname [-v true] [-n netlocation -r
+realm -u username -p password -c critlaglimit -w warninglimit
 
 =head1 REQUIRED ARGUMENTS
 
@@ -220,6 +219,11 @@ info of the http request;
 
 -c|--critical
 max threshold for critical lag performance status
+Default: 900 seconds
+
+-w|--warning
+max threshold for warning lag performance status
+Default: 120 seconds
 
 -h|--help
 this text;
@@ -257,7 +261,7 @@ For Puppet, see the icinga.pp manifest.
 
 =head1 DEPENDENCIES
 
-This plugin requires JSON::Path
+This plugin requires JSON
 
 =head1 INCOMPATIBILITIES
 
