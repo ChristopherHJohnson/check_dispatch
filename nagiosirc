@@ -449,7 +449,7 @@ while (1) {
             }
       }
 
-      if ((time - $laststat) > 30) {
+     # if ((time - $laststat) > 30) {
         # we don't want to constantly stat the file or we'll hammer the disk.
         # keep it to once every 30 seconds. Here we compare the inode of the
         # file we have open and the file at the path we're expecting and see
@@ -458,11 +458,11 @@ while (1) {
         # if we don't read a line from the file, so that way we make sure
         # actually gotten to the end of the current file before we check for
         # a rotation.
-        $laststat = time;
-        if ((stat NAGIOS)[1] != (stat $nagioslog)[1]) {
-            close NAGIOS;
-            open NAGIOS, "<$nagioslog";
-        }
-      }
+      #  $laststat = time;
+       # if ((stat NAGIOS)[1] != (stat $nagioslog)[1]) {
+        #    close NAGIOS;
+         #   open NAGIOS, "<$nagioslog";
+        #}
+      #}
     }
 }
