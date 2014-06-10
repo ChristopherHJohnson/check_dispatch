@@ -55,8 +55,8 @@ my $irc = new Net::IRC;
 my $nagioslog = "/var/log/icinga/icinga.log";
 my $nagioscmd = "/var/lib/icinga/rw/icinga.cmd";
 
-open(NAGIOS, "<$nagioslog") or die "failed to open $nagioslog: $!\n";
-seek NAGIOS, 0, 2; # seek to end
+open my $NAGIOS, $nagioslog or die "failed to open $nagioslog: $!\n";
+seek $NAGIOS, 0, 2; # seek to end
 
 my @cmdqueue = ();
 my %ignore = ();
@@ -416,9 +416,8 @@ while (1) {
     if ($identified_to_nickserv) {
       # CONFIG: change where we announce stuff here
       my @channels = ('#monitoring', '#status');
-      while (defined (my $line = <NAGIOS>)) {
+      while (my $line = <$NAGIOS>) {
         print $line;
-        chomp($line);
         if ($line =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
             my ($type, $msg) = ($1, $2);
             my ($who, $host, $service, $state, $how, $output);
@@ -447,8 +446,9 @@ while (1) {
                 (!grep { $_ eq "$host" } keys %ignore)) {
                 $conn->privmsg($_,"$msg") foreach @channels;
             }
+            last if $. == 2;  
          }
-
+        close $NAGIOS;
      # if ((time - $laststat) > 30) {
         # we don't want to constantly stat the file or we'll hammer the disk.
         # keep it to once every 30 seconds. Here we compare the inode of the
