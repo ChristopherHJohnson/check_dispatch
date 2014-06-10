@@ -411,7 +411,6 @@ print "starting...\n";
 
 my %renot; # { "host" or "host:service" => time_last_notification }
 while (1) {
-    $irc->start;
     #$irc->addfh ($log, 
     if ($identified_to_nickserv) {
       # CONFIG: change where we announce stuff here
@@ -466,4 +465,5 @@ while (1) {
       #}
     }
     }  
+$irc->start;    
 }
