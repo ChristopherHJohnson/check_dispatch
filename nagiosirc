@@ -32,24 +32,25 @@ use Term::ANSIColor qw/ :constants /;
 
 my $version = "BZBot v1.3 - Modified for use with Nagios.";
 my $irc = new Net::IRC;
-#my $irc = Bot::BasicBot->new(
- 
-#  server => "localhost",
-#  port   => "6667",
-#  channels => ["#bottest"],
- 
-#  nick      => "icinga_dispatch_monitor",
-#  alt_nicks => ["bbot", "simplebot"],
-#  username  => "bot",
-#  name      => "Icinga Monitor",
- 
-#  ignore_list => [qw(dipsy dadadodo laotse)],
- 
-#);
-#open IPADDR, "</etc/ipaddr";
-#my $ipaddr = <IPADDR>;
-#chomp ($ipaddr);
-#close IPADDR;
+#$conn->add_global_handler('ping', \&on_ping);
+#$conn->add_global_handler('pong', \&on_pong);
+#$conn->add_handler('cping', \&on_ctcpping);
+#$conn->add_handler('crping', \&on_ping_reply);
+#$conn->add_handler('cversion', \&on_ctcpversion);
+#$conn->add_handler('msg', \&on_msg);
+#$conn->add_handler('public', \&on_public);
+#$conn->add_handler('caction', \&on_action);
+#$conn->add_handler('join', \&on_join);
+#$conn->add_handler('part', \&on_part);
+#$conn->add_handler('topic', \&on_topic);
+#$conn->add_handler('notopic', \&on_topic);
+#$conn->add_handler('notice', \&on_notice);
+
+#$conn->add_global_handler([ 251,252,253,254,302,255 ], \&on_init);
+#$conn->add_global_handler('disconnect', \&on_disconnect);
+$irc->add_global_handler('376', \&on_connect);
+#$conn->add_global_handler(433, \&on_nick_taken);
+#$conn->add_global_handler(353, \&on_names);
 
 # CONFIG: point this where your Nagios configuration files live
 my $nagioslog = "/var/log/icinga/icinga.log";
@@ -367,25 +368,7 @@ sub ackable {
 
 print "Installing handler routines...";
 
-#$conn->add_global_handler('ping', \&on_ping);
-#$conn->add_global_handler('pong', \&on_pong);
-#$conn->add_handler('cping', \&on_ctcpping);
-#$conn->add_handler('crping', \&on_ping_reply);
-#$conn->add_handler('cversion', \&on_ctcpversion);
-#$conn->add_handler('msg', \&on_msg);
-#$conn->add_handler('public', \&on_public);
-#$conn->add_handler('caction', \&on_action);
-#$conn->add_handler('join', \&on_join);
-#$conn->add_handler('part', \&on_part);
-#$conn->add_handler('topic', \&on_topic);
-#$conn->add_handler('notopic', \&on_topic);
-#$conn->add_handler('notice', \&on_notice);
 
-#$conn->add_global_handler([ 251,252,253,254,302,255 ], \&on_init);
-#$conn->add_global_handler('disconnect', \&on_disconnect);
-$conn->add_global_handler('376', \&on_connect);
-#$conn->add_global_handler(433, \&on_nick_taken);
-#$conn->add_global_handler(353, \&on_names);
 
 print " done.\n";
 
