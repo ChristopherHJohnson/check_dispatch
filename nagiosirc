@@ -68,7 +68,7 @@ print "Creating connection to IRC server...\n";
 my $conn;
 while (!$conn) {
     # CONFIG: you have to tell us where to get on IRC
-    $conn = $irc->newconn(Server   => 'irc.freenode.net',
+    $conn = $irc->newconn(Server   => 'se1.arcnet.vapor.com',
                           Port     => 6667,
                           SSL      => 0,
                           Nick     => 'icinga_dispatch_monitor',
@@ -107,7 +107,7 @@ sub on_connect {
     #$self->privmsg('nickserv',"identify xxx");
 
     # CONFIG: channels you want us to announce to ...
-    $self->join("#wikimedia-de-tech");
+    $self->join("#heimkino");
     #$self->join("#status");
 }
 
