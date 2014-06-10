@@ -122,8 +122,8 @@ sub on_endofnames {
             my ($who, $host, $service, $state, $how, $output);
             if ($type eq "HOST") {
                 ($who, $host, $state, $how, $output) = split(";",$msg,5);
-                next if exists $renot{$host} && $renot{$host} >= time() - 5;
-                $renot{$host} = time();
+                #next if exists $renot{$host} && $renot{$host} >= time() - 5;
+                #$renot{$host} = time();
 
                 my $id = ackable($host,undef,$state,$output);
                 $msg = $state_to_color->{$state} . "$id$host is $state: $output";
