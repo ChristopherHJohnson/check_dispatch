@@ -156,7 +156,7 @@ my $median_lag = $stats->{query}->{statistics}->{dispatch}->{median}->{lag};
        push @lag_mins, sprintf ("%.2f",$dtval->minutes);
    }
 
-    print "Median Dispatch Lag is now $lag_mins[1] minutes , Stalest Dispatch Lag = $lag_mins[0] minutes |median lag=  $lag_secs[1]s;3;", $critical, ";\n";
+    print "Median Dispatch Lag is now $lag_mins[1] minutes , Stalest Dispatch Lag = $lag_mins[0] minutes |median lag=  $lag_secs[1]s;", $warning,";", $critical, ";\n";
 
     if ($lag_secs[1] > $critical) {
         print "CRITICAL: Dispatch Lag is greater than " , $critical, " seconds \n";
