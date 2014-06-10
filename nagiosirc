@@ -145,7 +145,7 @@ sub on_endofnames {
           #  if ((!grep { $_ eq "$host:$service" } keys %ignore) &&
           #      (!grep { $_ eq "$host" } keys %ignore)) {
         #        $conn->privmsg($_,"$msg") foreach @channels;
-          #  }
+            }
         #last if $. == 2; 
          }
 }     
