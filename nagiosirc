@@ -119,9 +119,9 @@ sub on_endofnames {
           chomp $row;
           if ($row =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
            my ($type, $msg) = ($1, $2);
-            my ($who, $host, $service, $state, $how, $output);
+            my ($host, $state, $how, $attempts, $output);
             if ($type eq "HOST") {
-                ($who, $host, $state, $how, $output) = split(";",$msg,5);
+                ($host, $state, $how, $attempts, $output,) = split(";",$msg,5);
                 #next if exists $renot{$host} && $renot{$host} >= time() - 5;
                 #$renot{$host} = time();
 
@@ -129,7 +129,7 @@ sub on_endofnames {
                 $msg = $state_to_color->{$state} . "$id$host is $state: $output";
             }
             else {
-                ($who, $host, $service, $state, $how, $output) = split(";",$msg,6);
+                ($host, $service, $state, $how, $attempts, $output) = split(";",$msg,6);
             #    next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
            #     $renot{"$host:$service"} = time();
 
