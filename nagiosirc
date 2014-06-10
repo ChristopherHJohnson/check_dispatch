@@ -120,16 +120,8 @@ sub on_endofnames {
           if ($row =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
            my ($type, $msg) = ($1, $2);
             my ($host, $service, $state, $how, $attempts, $output);
-            if ($type eq "HOST") {
-                ($host, $state, $how, $attempts, $output,) = split(";",$msg,5);
-                #next if exists $renot{$host} && $renot{$host} >= time() - 5;
-                #$renot{$host} = time();
-
-               # my $id = ackable($host,undef,$state,$output);
-                #$msg = $state_to_color->{$state} . "$host is $state: $output";
-            }
-            else {
-                ($host, $service, $state, $how, $attempts, $output) = split(";",$msg,6);
+            if ($type eq "SERVICE") {
+               ($host, $service, $state, $how, $attempts, $output) = split(";",$msg,6);
             #    next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
            #     $renot{"$host:$service"} = time();
 
@@ -145,9 +137,9 @@ sub on_endofnames {
           #  if ((!grep { $_ eq "$host:$service" } keys %ignore) &&
           #      (!grep { $_ eq "$host" } keys %ignore)) {
         #        $conn->privmsg($_,"$msg") foreach @channels;
-            }
+          }
         #last if $. == 2; 
-         }
+      }
 }     
        
  #     }
