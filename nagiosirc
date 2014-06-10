@@ -132,7 +132,7 @@ while (1) {
               #  next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
               #  $renot{"$host:$service"} = time();
 
-               # my $id = ackable($host,$service,$state,$output);
+                my $id = ackable($host,$service,$state,$output);
                 $msg = $state_to_color->{$state} . "$id$host:$service is $state: $output";
             #}
             #$service ||= "";
