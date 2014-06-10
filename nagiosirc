@@ -144,8 +144,9 @@ print "starting...\n";
           #      (!grep { $_ eq "$host" } keys %ignore)) {
         #        $conn->privmsg($_,"$msg") foreach @channels;
           #  }
+        last if $. == 2; 
          }
-       last if $. == 2;
+       $irc->do_one_loop();
  #     }
       #close $NAGIOS;
     #}
