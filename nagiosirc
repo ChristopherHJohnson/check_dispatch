@@ -382,7 +382,7 @@ print "Installing handler routines...";
 #$conn->add_handler('notice', \&on_notice);
 
 #$conn->add_global_handler([ 251,252,253,254,302,255 ], \&on_init);
-$conn->add_global_handler('disconnect', \&on_disconnect);
+#$conn->add_global_handler('disconnect', \&on_disconnect);
 $conn->add_global_handler(376, \&on_connect);
 #$conn->add_global_handler(433, \&on_nick_taken);
 #$conn->add_global_handler(353, \&on_names);
@@ -411,7 +411,7 @@ print "starting...\n";
 
 my %renot; # { "host" or "host:service" => time_last_notification }
 while (1) {
-    $irc->do_one_loop();
+    #$irc->do_one_loop();
     #$irc->addfh ($log, 
     if ($identified_to_nickserv) {
       # CONFIG: change where we announce stuff here
@@ -465,5 +465,6 @@ while (1) {
         #}
       #}
     }
-    }  
+    }
+    $irc->start;
 }
