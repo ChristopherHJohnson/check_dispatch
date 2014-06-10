@@ -68,12 +68,12 @@ print "Creating connection to IRC server...\n";
 my $conn;
 while (!$conn) {
     # CONFIG: you have to tell us where to get on IRC
-    $conn = $irc->newconn(Server   => 'localhost',
+    $conn = $irc->newconn(Server   => 'irc.freenode.net',
                           Port     => 6667,
                           SSL      => 0,
-                          Nick     => 'fidget',
-                          Ircname  => 'Nagios alerts',
-                          Username => 'nagios')
+                          Nick     => 'icinga_dispatch_monitor',
+                          Ircname  => 'Icinga Alerts',
+                          Username => 'wdicinga')
     or print "Redialing...\n";
     sleep 1;
 }
@@ -99,7 +99,7 @@ sub on_connect {
     my $self = shift;
 
     $identified_to_nickserv = 1;
-    print "Joining #status...\n";
+    print "Joining #wikimedia-de-tech...\n";
 
     # FIXME: this is broken right now. when this is re-added, it has to happen
     # before we try to join channels.
@@ -107,8 +107,8 @@ sub on_connect {
     #$self->privmsg('nickserv',"identify xxx");
 
     # CONFIG: channels you want us to announce to ...
-    $self->join("#monitoring");
-    $self->join("#status");
+    $self->join("#wikimedia-de-tech");
+    #$self->join("#status");
 }
 
 # Handles some messages you get when you connect
@@ -466,5 +466,4 @@ while (1) {
       #}
     }
     }  
-$irc->start;    
 }
