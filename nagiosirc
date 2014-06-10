@@ -111,7 +111,7 @@ print "starting...\n";
 my %renot; # { "host" or "host:service" => time_last_notification }
 while (1) {
     $irc->do_one_loop();
-    if ($identified_to_nickserv) {
+    #if ($identified_to_nickserv) {
       # CONFIG: change where we announce stuff here
       my @channels = ($channel, '#status');
       while (my $line = <$NAGIOS>) {
@@ -119,23 +119,23 @@ while (1) {
         if ($line =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
             my ($type, $msg) = ($1, $2);
             my ($who, $host, $service, $state, $how, $output);
-            if ($type eq "HOST") {
-                ($who, $host, $state, $how, $output) = split(";",$msg,5);
-                next if exists $renot{$host} && $renot{$host} >= time() - 5;
-                $renot{$host} = time();
+           # if ($type eq "HOST") {
+            #    ($who, $host, $state, $how, $output) = split(";",$msg,5);
+             #   next if exists $renot{$host} && $renot{$host} >= time() - 5;
+              #  $renot{$host} = time();
 
-                my $id = ackable($host,undef,$state,$output);
-                $msg = $state_to_color->{$state} . "$id$host is $state: $output";
-            }
-            else {
-                ($who, $host, $service, $state, $how, $output) = split(";",$msg,6);
-                next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
-                $renot{"$host:$service"} = time();
+               # my $id = ackable($host,undef,$state,$output);
+                #$msg = $state_to_color->{$state} . "$id$host is $state: $output";
+            #}
+            #else {
+             #   ($who, $host, $service, $state, $how, $output) = split(";",$msg,6);
+              #  next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
+              #  $renot{"$host:$service"} = time();
 
-                my $id = ackable($host,$service,$state,$output);
+               # my $id = ackable($host,$service,$state,$output);
                 $msg = $state_to_color->{$state} . "$id$host:$service is $state: $output";
-            }
-            $service ||= "";
+            #}
+            #$service ||= "";
 
             # alerts can be separated by who they're for (which group is getting it)
             #if ($who eq "mark") { push @channels, "#dw_ops", "#dw_work" }
@@ -144,14 +144,12 @@ while (1) {
           #      (!grep { $_ eq "$host" } keys %ignore)) {
                 $conn->privmsg($_,"$msg") foreach @channels;
           #  }
-            last if $. == 2;
          }
-        close $NAGIOS;
-    }
-    }
+       last if $. == 2;
+      }
+      close $NAGIOS;
+    #}
    } 
-
-
 #
 # Handler subs
 #
