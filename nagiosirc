@@ -52,7 +52,7 @@ my $irc = new Net::IRC;
 #close IPADDR;
 
 # CONFIG: point this where your Nagios configuration files live
-my $nagioslog = "/var/lib/icinga/status.dat";
+my $nagioslog = "/var/log/icinga/icinga.log";
 my $nagioscmd = "/var/lib/icinga/rw/icinga.cmd";
 
 open(NAGIOS, "<$nagioslog") or die "failed to open $nagioslog: $!\n";
