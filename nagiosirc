@@ -447,7 +447,7 @@ while (1) {
                 (!grep { $_ eq "$host" } keys %ignore)) {
                 $conn->privmsg($_,"$msg") foreach @channels;
             }
-      }
+         }
 
      # if ((time - $laststat) > 30) {
         # we don't want to constantly stat the file or we'll hammer the disk.
@@ -465,4 +465,5 @@ while (1) {
         #}
       #}
     }
+    }  
 }
