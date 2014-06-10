@@ -108,17 +108,17 @@ print " done.\n";
 
 print "starting...\n";
 
-my %renot; # { "host" or "host:service" => time_last_notification }
-while (1) {
-    $irc->do_one_loop();
+#my %renot; # { "host" or "host:service" => time_last_notification }
+#while (1) {
+    
     #if ($identified_to_nickserv) {
       # CONFIG: change where we announce stuff here
-      my @channels = ($channel, '#status');
+      #my @channels = ($channel, '#status');
       while (my $line = <$NAGIOS>) {
         print $line;
-        if ($line =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
-            my ($type, $msg) = ($1, $2);
-            my ($who, $host, $service, $state, $how, $output);
+       # if ($line =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
+        #    my ($type, $msg) = ($1, $2);
+         #   my ($who, $host, $service, $state, $how, $output);
            # if ($type eq "HOST") {
             #    ($who, $host, $state, $how, $output) = split(";",$msg,5);
              #   next if exists $renot{$host} && $renot{$host} >= time() - 5;
@@ -132,8 +132,8 @@ while (1) {
               #  next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
               #  $renot{"$host:$service"} = time();
 
-                my $id = ackable($host,$service,$state,$output);
-                $msg = $state_to_color->{$state} . "$id$host:$service is $state: $output";
+          #      my $id = ackable($host,$service,$state,$output);
+           #     $msg = $state_to_color->{$state} . "$id$host:$service is $state: $output";
             #}
             #$service ||= "";
 
@@ -142,14 +142,14 @@ while (1) {
 
           #  if ((!grep { $_ eq "$host:$service" } keys %ignore) &&
           #      (!grep { $_ eq "$host" } keys %ignore)) {
-                $conn->privmsg($_,"$msg") foreach @channels;
+        #        $conn->privmsg($_,"$msg") foreach @channels;
           #  }
          }
        last if $. == 2;
-      }
+ #     }
       #close $NAGIOS;
     #}
-   } 
+  # } 
 #
 # Handler subs
 #
