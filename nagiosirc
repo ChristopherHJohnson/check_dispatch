@@ -125,16 +125,16 @@ sub on_endofnames {
                 #next if exists $renot{$host} && $renot{$host} >= time() - 5;
                 #$renot{$host} = time();
 
-                my $id = ackable($host,undef,$state,$output);
-                $msg = $state_to_color->{$state} . "$id$host is $state: $output";
+               # my $id = ackable($host,undef,$state,$output);
+                #$msg = $state_to_color->{$state} . "$host is $state: $output";
             }
             else {
                 ($host, $service, $state, $how, $attempts, $output) = split(";",$msg,6);
             #    next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
            #     $renot{"$host:$service"} = time();
 
-               my $id = ackable($host,$service,$state,$output);
-               $msg = $state_to_color->{$state} . "$id$host:$service is $state: $output";
+              # my $id = ackable($host,$service,$state,$output);
+               $msg = $state_to_color->{$state} . "$host:$service is $state: $output";
              print "$msg\n";           
             }
             #$service ||= "";
