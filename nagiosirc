@@ -411,8 +411,8 @@ print "starting...\n";
 
 my %renot; # { "host" or "host:service" => time_last_notification }
 while (1) {
-    $irc->do_one_loop();
-
+    $irc->start;
+    #$irc->addfh ($log, 
     if ($identified_to_nickserv) {
       # CONFIG: change where we announce stuff here
       my @channels = ('#monitoring', '#status');
