@@ -102,18 +102,20 @@ print "Installing handler routines...";
 $conn->add_global_handler([ 251,252,253,254,302,255 ], \&on_init);
 #$conn->add_global_handler('disconnect', \&on_disconnect);
 $conn->add_global_handler('notice', \&on_connect);
+$conn->add_global_handler('366', \&on_endofnames);
 #$conn->add_global_handler(433, \&on_nick_taken);
 #$conn->add_global_handler(353, \&on_names);
 print " done.\n";
 
 print "starting...\n";
-
+$irc->start;
 #my %renot; # { "host" or "host:service" => time_last_notification }
 #while (1) {
     
     #if ($identified_to_nickserv) {
       # CONFIG: change where we announce stuff here
       #my @channels = ($channel, '#status');
+sub on_endofnames {
       while (my $line = <$NAGIOS>) {
         print $line;
        # if ($line =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
@@ -146,7 +148,8 @@ print "starting...\n";
           #  }
         last if $. == 2; 
          }
-     $irc->start;  
+}     
+       
  #     }
       #close $NAGIOS;
     #}
