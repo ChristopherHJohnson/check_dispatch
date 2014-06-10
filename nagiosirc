@@ -120,15 +120,15 @@ sub on_endofnames {
           if ($row =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
            my ($type, $msg) = ($1, $2);
             my ($who, $host, $service, $state, $how, $output);
-            #if ($type eq "HOST") {
-             #   ($who, $host, $state, $how, $output) = split(";",$msg,5);
-              #  next if exists $renot{$host} && $renot{$host} >= time() - 5;
-               # $renot{$host} = time();
+            if ($type eq "HOST") {
+                ($who, $host, $state, $how, $output) = split(";",$msg,5);
+                next if exists $renot{$host} && $renot{$host} >= time() - 5;
+                $renot{$host} = time();
 
-                #my $id = ackable($host,undef,$state,$output);
-                #$msg = $state_to_color->{$state} . "$id$host is $state: $output";
-            #}
-            #else {
+                my $id = ackable($host,undef,$state,$output);
+                $msg = $state_to_color->{$state} . "$id$host is $state: $output";
+            }
+            else {
                 ($who, $host, $service, $state, $how, $output) = split(";",$msg,6);
             #    next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
            #     $renot{"$host:$service"} = time();
