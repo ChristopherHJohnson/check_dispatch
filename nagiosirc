@@ -22,7 +22,6 @@
 
 use strict;
 use Net::IRC;
-#use Bot::BasicBot;
 use POSIX "sys_wait_h";
 use Term::ANSIColor qw/ :constants /;
 
@@ -32,6 +31,24 @@ use Term::ANSIColor qw/ :constants /;
 
 my $version = "BZBot v1.3 - Modified for use with Nagios.";
 my $irc = new Net::IRC;
+
+my %C = (
+    W => "\x0315",
+    B => "\x032",
+    G => "\x033",
+    R => "\x034",
+    O => "\x037",
+    C => "\x0311",
+    Y => "\x038",
+    N => "\x0315",
+);
+
+my $state_to_color = {
+    OK => $C{G},
+    WARNING => $C{Y},
+    CRITICAL => $C{R},
+    UNKNOWN => $C{C},
+};
 
 
 # CONFIG: point this where your Nagios configuration files live
@@ -47,6 +64,7 @@ my $ACKCT = 0;
 my @ACKS;
 
 print "Creating connection to IRC server...\n";
+my $channel = "#heimkino";
 
 my $conn;
 while (!$conn) {
@@ -61,6 +79,12 @@ while (!$conn) {
     sleep 1;
 }
 
+print "Connection created.\n";
+$conn->debug(1);    
+my $laststat = time;   
+my $identified_to_nickserv = 0;
+
+print "Installing handler routines...";
 #$conn->add_global_handler('ping', \&on_ping);
 #$conn->add_global_handler('pong', \&on_pong);
 #$conn->add_handler('cping', \&on_ctcpping);
@@ -75,16 +99,58 @@ while (!$conn) {
 #$conn->add_handler('notopic', \&on_topic);
 #$conn->add_handler('notice', \&on_notice);
 
-#$conn->add_global_handler([ 251,252,253,254,302,255 ], \&on_init);
+$conn->add_global_handler([ 251,252,253,254,302,255 ], \&on_init);
 #$conn->add_global_handler('disconnect', \&on_disconnect);
-$conn->add_global_handler('376', \&on_connect);
+$conn->add_global_handler('notice', \&on_connect);
 #$conn->add_global_handler(433, \&on_nick_taken);
 #$conn->add_global_handler(353, \&on_names);
+print " done.\n";
 
-print "Connection created.\n";
-$conn->debug(1);
-my $laststat = time;
-my $identified_to_nickserv = 0;
+print "starting...\n";
+
+my %renot; # { "host" or "host:service" => time_last_notification }
+while (1) {
+    $irc->do_one_loop();
+    if ($identified_to_nickserv) {
+      # CONFIG: change where we announce stuff here
+      my @channels = ($channel, '#status');
+      while (my $line = <$NAGIOS>) {
+        print $line;
+        if ($line =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
+            my ($type, $msg) = ($1, $2);
+            my ($who, $host, $service, $state, $how, $output);
+            if ($type eq "HOST") {
+                ($who, $host, $state, $how, $output) = split(";",$msg,5);
+                next if exists $renot{$host} && $renot{$host} >= time() - 5;
+                $renot{$host} = time();
+
+                my $id = ackable($host,undef,$state,$output);
+                $msg = $state_to_color->{$state} . "$id$host is $state: $output";
+            }
+            else {
+                ($who, $host, $service, $state, $how, $output) = split(";",$msg,6);
+                next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
+                $renot{"$host:$service"} = time();
+
+                my $id = ackable($host,$service,$state,$output);
+                $msg = $state_to_color->{$state} . "$id$host:$service is $state: $output";
+            }
+            $service ||= "";
+
+            # alerts can be separated by who they're for (which group is getting it)
+            #if ($who eq "mark") { push @channels, "#dw_ops", "#dw_work" }
+
+          #  if ((!grep { $_ eq "$host:$service" } keys %ignore) &&
+          #      (!grep { $_ eq "$host" } keys %ignore)) {
+                $conn->privmsg($_,"$msg") foreach @channels;
+          #  }
+            last if $. == 2;
+         }
+        close $NAGIOS;
+    }
+    }
+   } 
+
 
 #
 # Handler subs
@@ -95,16 +161,10 @@ sub on_connect {
     my $self = shift;
 
     $identified_to_nickserv = 1;
-    print "Joining #wikimedia-de-tech...\n";
-
-    # FIXME: this is broken right now. when this is re-added, it has to happen
-    # before we try to join channels.
-    #print "Identifying to NickServ...\n";
-    #$self->privmsg('nickserv',"identify xxx");
+    print "Joining $channel.\n";
 
     # CONFIG: channels you want us to announce to ...
-    $self->join("#heimkino");
-    #$self->join("#status");
+    $self->join($channel);
 }
 
 # Handles some messages you get when you connect
@@ -360,89 +420,3 @@ sub ackable {
     $ACKS[$id] = [ $host, $svc, $state, $msg ];
     return sprintf( '[%02d] ', $id );
 }
-
-print "Installing handler routines...";
-
-
-
-print " done.\n";
-
-my %C = (
-    W => "\x0315",
-    B => "\x032",
-    G => "\x033",
-    R => "\x034",
-    O => "\x037",
-    C => "\x0311",
-    Y => "\x038",
-    N => "\x0315",
-);
-
-my $state_to_color = {
-    OK => $C{G},
-    WARNING => $C{Y},
-    CRITICAL => $C{R},
-    UNKNOWN => $C{C},
-};
-
-print "starting...\n";
-
-my %renot; # { "host" or "host:service" => time_last_notification }
-while (1) {
-    #$irc->do_one_loop();
-    #$irc->addfh ($log, 
-    if ($identified_to_nickserv) {
-      # CONFIG: change where we announce stuff here
-      my @channels = ('#monitoring', '#status');
-      while (my $line = <$NAGIOS>) {
-        print $line;
-        if ($line =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
-            my ($type, $msg) = ($1, $2);
-            my ($who, $host, $service, $state, $how, $output);
-            if ($type eq "HOST") {
-                ($who, $host, $state, $how, $output) = split(";",$msg,5);
-                next if exists $renot{$host} && $renot{$host} >= time() - 5;
-                $renot{$host} = time();
-
-                my $id = ackable($host,undef,$state,$output);
-                $msg = $state_to_color->{$state} . "$id$host is $state: $output";
-            }
-            else {
-                ($who, $host, $service, $state, $how, $output) = split(";",$msg,6);
-                next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
-                $renot{"$host:$service"} = time();
-
-                my $id = ackable($host,$service,$state,$output);
-                $msg = $state_to_color->{$state} . "$id$host:$service is $state: $output";
-            }
-            $service ||= "";
-
-            # alerts can be separated by who they're for (which group is getting it)
-#if ($who eq "mark") { push @channels, "#dw_ops", "#dw_work" }
-
-            if ((!grep { $_ eq "$host:$service" } keys %ignore) &&
-                (!grep { $_ eq "$host" } keys %ignore)) {
-                $conn->privmsg($_,"$msg") foreach @channels;
-            }
-            last if $. == 2;  
-         }
-        close $NAGIOS;
-     # if ((time - $laststat) > 30) {
-        # we don't want to constantly stat the file or we'll hammer the disk.
-        # keep it to once every 30 seconds. Here we compare the inode of the
-        # file we have open and the file at the path we're expecting and see
-        # if they match. If they don't, then the log has been rotated, so we
-        # close and reopen it to pick up the new logfile. We also only do it
-        # if we don't read a line from the file, so that way we make sure
-        # actually gotten to the end of the current file before we check for
-        # a rotation.
-      #  $laststat = time;
-       # if ((stat NAGIOS)[1] != (stat $nagioslog)[1]) {
-        #    close NAGIOS;
-         #   open NAGIOS, "<$nagioslog";
-        #}
-      #}
-    }
-    }
-   }
- $irc->start;
