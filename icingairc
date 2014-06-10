@@ -1,0 +1,90 @@
+#!/usr/bin/perl -w
+#
+# The contents of this file are subject to the Mozilla Public
+# License Version 1.1 (the "License"); you may not use this file
+# except in compliance with the License. You may obtain a copy of
+# the License at http://www.mozilla.org/MPL/
+#
+# Software distributed under the License is distributed on an "AS
+# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# rights and limitations under the License.
+#
+# The Original Code is the Bugzilla Status Bot
+#
+# The Initial Developer of the Original Code is David D. Miller.
+# Portions developed by David D. Miller are Copyright (C) 2002-3
+# David D. Miller. All Rights Reserved.
+#
+# Contributor(s): David Miller <justdave@syndicomm.com>
+# Mark Smith <mark@qq.is>
+#
+
+use strict;
+use Net::IRC;
+#use Bot::BasicBot;
+use POSIX "sys_wait_h";
+use Term::ANSIColor qw/ :constants /;
+
+#
+# Create the IRC and Connection objects
+#
+
+my $version = "BZBot v1.3 - Modified for use with Nagios.";
+my $irc = new Net::IRC;
+
+
+# CONFIG: point this where your Nagios configuration files live
+my $nagioslog = "/var/log/icinga/icinga.log";
+my $nagioscmd = "/var/lib/icinga/rw/icinga.cmd";
+
+open my $NAGIOS, $nagioslog or die "failed to open $nagioslog: $!\n";
+seek $NAGIOS, 0, 2; # seek to end
+
+my @cmdqueue = ();
+my %ignore = ();
+my $ACKCT = 0;
+my @ACKS;
+
+print "Creating connection to IRC server...\n";
+
+my $conn;
+while (!$conn) {
+    # CONFIG: you have to tell us where to get on IRC
+    $conn = $irc->newconn(Server   => 'se1.arcnet.vapor.com',
+                          Port     => 6667,
+                          SSL      => 0,
+                          Nick     => 'icinga_dispatch_monitor',
+                          Ircname  => 'Icinga Alerts',
+                          Username => 'wdicinga')
+    or print "Redialing...\n";
+    sleep 1;
+}
+
+$conn->add_global_handler('376', \&on_connect);
+
+
+print "Connection created.\n";
+$conn->debug(1);
+my $laststat = time;
+my $identified_to_nickserv = 0;
+
+#
+# Handler subs
+#
+
+# What to do when the bot successfully connects.
+sub on_connect {
+    my $self = shift;
+
+    $identified_to_nickserv = 1;
+    print "Joining #wikimedia-de-tech...\n";
+
+   #$self->privmsg('nickserv',"identify xxx");
+
+    # CONFIG: channels you want us to announce to ...
+    $self->join("#heimkino");
+    #$self->join("#status");
+}
+
+$irc->start;
