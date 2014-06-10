@@ -119,7 +119,7 @@ sub on_endofnames {
           chomp $row;
           if ($row =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
            my ($type, $msg) = ($1, $2);
-            my ($host, $state, $how, $attempts, $output);
+            my ($host, $service, $state, $how, $attempts, $output);
             if ($type eq "HOST") {
                 ($host, $state, $how, $attempts, $output,) = split(";",$msg,5);
                 #next if exists $renot{$host} && $renot{$host} >= time() - 5;
