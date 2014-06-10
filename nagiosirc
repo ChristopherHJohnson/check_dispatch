@@ -419,7 +419,7 @@ while (1) {
       while (defined (my $line = <NAGIOS>)) {
         print $line;
         chomp($line);
-        if ($line =~ /^\[\d+\] (HOST|SERVICE) NOTIFICATION: (.+)$/) {
+        if ($line =~ /^\[\d+\] (HOST|SERVICE) STATE: (.+)$/) {
             my ($type, $msg) = ($1, $2);
             my ($who, $host, $service, $state, $how, $output);
             if ($type eq "HOST") {
