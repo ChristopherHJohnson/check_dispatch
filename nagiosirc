@@ -146,7 +146,7 @@ print "starting...\n";
           #  }
         last if $. == 2; 
          }
-       $irc->do_one_loop();
+     $irc->start;  
  #     }
       #close $NAGIOS;
     #}
