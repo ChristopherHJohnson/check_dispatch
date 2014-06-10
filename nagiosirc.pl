@@ -21,7 +21,8 @@
 #
 
 use strict;
-use Bot::BasicBot;
+use Net::IRC;
+#use Bot::BasicBot;
 use POSIX "sys_wait_h";
 use Term::ANSIColor qw/ :constants /;
 
@@ -30,21 +31,21 @@ use Term::ANSIColor qw/ :constants /;
 #
 
 my $version = "BZBot v1.3 - Modified for use with Nagios.";
-#my $irc = new Net::IRC;
-my $irc = Bot::BasicBot->new(
+my $irc = new Net::IRC;
+#my $irc = Bot::BasicBot->new(
  
-  server => "localhost",
-  port   => "6667",
-  channels => ["#bottest"],
+#  server => "localhost",
+#  port   => "6667",
+#  channels => ["#bottest"],
  
-  nick      => "icinga_dispatch_monitor",
-  alt_nicks => ["bbot", "simplebot"],
-  username  => "bot",
-  name      => "Icinga Monitor",
+#  nick      => "icinga_dispatch_monitor",
+#  alt_nicks => ["bbot", "simplebot"],
+#  username  => "bot",
+#  name      => "Icinga Monitor",
  
-  ignore_list => [qw(dipsy dadadodo laotse)],
+#  ignore_list => [qw(dipsy dadadodo laotse)],
  
-);
+#);
 #open IPADDR, "</etc/ipaddr";
 #my $ipaddr = <IPADDR>;
 #chomp ($ipaddr);
@@ -67,10 +68,22 @@ print "Creating connection to IRC server...\n";
 my $conn;
 while (!$conn) {
     # CONFIG: you have to tell us where to get on IRC
-    $conn = $irc->run();
+    $conn = $irc->newconn(Server   => 'localhost',
+                          Port     => 6667,
+                          SSL      => 0,
+                          Nick     => 'fidget',
+                          Ircname  => 'Nagios alerts',
+                          Username => 'nagios')
     or print "Redialing...\n";
     sleep 1;
 }
+
+#while (!$conn) {
+    # CONFIG: you have to tell us where to get on IRC
+#    $conn = $irc->run();
+#    or print "Redialing...\n";
+#    sleep 1;
+#}
 
 print "Connection created.\n";
 $conn->debug(1);
