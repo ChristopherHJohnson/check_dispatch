@@ -98,6 +98,7 @@ sub read_icingalog {
               my $datestamp = ($1);
               my $recent = time() -5;
               my $msg = ($2);
+              $msg =~ s!\\[n]?!!g;  
               my @msg_explode = split(";",$msg,6);
               my ($host, $service, $state, $how, $attempts, $output) = @msg_explode[0,1,2,3,4,5];
 
