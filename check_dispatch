@@ -132,10 +132,7 @@ if ( $response->is_success ) {
     die "could not get header\n" unless defined $header;
 
     # if the header does not return the json content type, then exit
-    if ( $header =~ m/json./i  ) {
-            print "API URL OK -";
-    }
-    else {
+    unless ( $header =~ m/json./i  ) {
         print "WARNING: This does not look like the correct site\n";
         print "$header\n" if defined $header;
         exit $ERRORS{'WARNING'};
@@ -159,11 +156,11 @@ my $median_lag = $stats->{query}->{statistics}->{dispatch}->{median}->{lag};
     print "Median Dispatch Lag is now $lag_mins[1] minutes , Stalest Dispatch Lag = $lag_mins[0] minutes |median lag=  $lag_secs[1]s;", $warning,";", $critical, ";\n";
 
     if ($lag_secs[1] > $critical) {
-        print "CRITICAL: Dispatch Lag is greater than " , $critical, " seconds \n";
+        print "******** CRITICAL: Dispatch Lag is greater than " , $critical, " seconds\n ";
         exit $ERRORS{'CRITICAL'};
     }
     elsif ($lag_secs[1] > $warning){
-        print "WARNING: Dispatch Lag is greater than " , $warning, " seconds\n";
+        print "******** WARNING: Dispatch Lag is greater than " , $warning, " seconds\n ";
     exit $ERRORS{'WARNING'};
     }
     else {
