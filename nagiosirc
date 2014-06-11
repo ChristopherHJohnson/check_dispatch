@@ -24,14 +24,12 @@ use strict;
 use Net::IRC;
 use POSIX "sys_wait_h";
 use Term::ANSIColor qw/ :constants /;
+use AnyEvent;
 
-#
-# Create the IRC and Connection objects
-#
-
-my $version = "BZBot v1.3 - Modified for use with Nagios.";
+my $version = "IcingaBot v0.1";
 my $irc = new Net::IRC;
 
+#ANSI colors
 my %C = (
     W => "\x0315",
     B => "\x032",
@@ -51,7 +49,7 @@ my $state_to_color = {
 };
 
 
-# CONFIG: point this where your Nagios configuration files live
+# CONFIG: point this to Icinga log and command files
 my $nagioslog = "/var/log/icinga/icinga.log";
 my $nagioscmd = "/var/lib/icinga/rw/icinga.cmd";
 
@@ -60,13 +58,15 @@ my %ignore = ();
 my $ACKCT = 0;
 my @ACKS;
 
-print "Creating connection to IRC server...\n";
-my $channel = "#heimkino";
+# Create the IRC and Connection objects
 
+my $channel = "#wdtest";
+
+print "Creating connection to IRC server...\n";
 my $conn;
 while (!$conn) {
     # CONFIG: you have to tell us where to get on IRC
-    $conn = $irc->newconn(Server   => 'se1.arcnet.vapor.com',
+    $conn = $irc->newconn(Server   => 'irc.foonetic.net',
                           Port     => 6667,
                           SSL      => 0,
                           Nick     => 'icinga_dispatch_monitor',
@@ -99,54 +99,36 @@ print "Installing handler routines...";
 $conn->add_global_handler([ 251,252,253,254,302,255 ], \&on_init);
 #$conn->add_global_handler('disconnect', \&on_disconnect);
 $conn->add_global_handler('notice', \&on_connect);
-$conn->add_global_handler('366', \&on_endofnames);
+$conn->add_global_handler('366', \&read_icingalog);
 #$conn->add_global_handler(433, \&on_nick_taken);
 #$conn->add_global_handler(353, \&on_names);
 print " done.\n";
 
 print "starting...\n";
 $irc->start;
-#my %renot; # { "host" or "host:service" => time_last_notification }
-#while (1) {
-    
-    #if ($identified_to_nickserv) {
-      # CONFIG: change where we announce stuff here
-      #my @channels = ($channel, '#status');
-sub on_endofnames {
-      open (my $log, $nagioslog) or die "failed to open $nagioslog: $!\n";
-      #seek $NAGIOS, 0, 2; # seek to end
+
+#sub event_loop {
+#   my $w = AnyEvent->timer (after => 30, cb => sub read_icingalog );
+#}
+
+sub read_icingalog {
+    open (my $log, $nagioslog) or die "failed to open $nagioslog: $!\n";
       while (my $row = <$log>) {
           chomp $row;
           if ($row =~ /^\[\d+\] CURRENT SERVICE STATE: (.+)$/) {
               my $msg = ($1);
-              #my ($host, $service, $state, $how, $attempts, $output);
-            #if ($type eq "") {
-              my ($host, $service, $state, $how, $attempts, $output) = split(";",$msg,6);
-            #    next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
-           #     $renot{"$host:$service"} = time();
+              my @msg_explode = split(";",$msg,6);
+              my ($host, $service, $state, $how, $attempts, $output) = @msg_explode[0,1,2,3,4,5];
 
-              # my $id = ckable($host,$service,$state,$output);
-#             if $host eq "wikidata.org" {  
-              my $msg_out = "$host:$service is $state: $output";
-             print "$msg_out\n";          
- #            }
+             if ( $host eq "wikidata.org" ) {  
+                my $msg_out = $state_to_color->{$state} ."$host:$service is $state: $output";
+                $conn->privmsg("$channel","$msg_out");
+                print "$msg_out\n";          
+             }
           }
-            #$service ||= "";
-
-            # alerts can be separated by who they're for (which group is getting it)
-            #if ($who eq "mark") { push @channels, "#dw_ops", "#dw_work" }
-
-          #  if ((!grep { $_ eq "$host:$service" } keys %ignore) &&
-          #      (!grep { $_ eq "$host" } keys %ignore)) {
-             $conn->privmsg($_,"$msg_out");
       }
-        #last if $. == 2; 
 }     
        
- #     }
-      #close $NAGIOS;
-    #}
-  # } 
 #
 # Handler subs
 #
