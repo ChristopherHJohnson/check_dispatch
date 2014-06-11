@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+#
+
+use strict;
+use POSIX "sys_wait_h";
+use Term::ANSIColor qw/ :constants /;
+use AnyEvent;
+use AnyEvent::IRC::Client;
+
+my $version = "IcingaBot v0.1";
+
+#ANSI colors
+my %C = (
+    W => "\x0315",
+    B => "\x032",
+    G => "\x033",
+    R => "\x034",
+    O => "\x037",
+    C => "\x0311",
+    Y => "\x038",
+    N => "\x0315",
+);
+
+my $state_to_color = {
+    OK => $C{G},
+    WARNING => $C{Y},
+    CRITICAL => $C{R},
+    UNKNOWN => $C{C},
+};
+
+
+# CONFIG: point this to Icinga log and command files
+my $nagioslog = "/var/log/icinga/icinga.log";
+my $nagioscmd = "/var/lib/icinga/rw/icinga.cmd";
+
+# Create the IRC and Connection objects
+
+my $channel = "#wdtest";
+
+print "Creating connection to IRC server...\n";
+my $c = AnyEvent->condvar;
+my $timer = AnyEvent->timer (after => 5, cb => sub { $c->send });
+my $pc = AnyEvent::IRC::Client->new;
+
+$pc->reg_cb (
+   irc_privmsg => sub {
+      my ($self, $msg) = @_;
+
+      if ($msg->{params}->[-1] =~ m/net_irc3:\s*(.*)/) {
+         $pc->send_chan ("#test", "PRIVMSG", "#test", "yes?");
+      }
+   }
+);
+
+$pc->reg_cb (
+   channel_add => sub {
+      my ($self, $msg, $chan, @nicks) = @_;
+      my $nick = join ",", @nicks;
+
+      print "$chan += $nick\n";
+      print "chans: " . (join ";", keys %{$self->channel_list}) ."\n";
+      print "nicks: " . (join ";", keys %{$self->channel_list ()->{$chan}}) ."\n";
+   },
+   channel_remove => sub {
+      my ($self, $msg, $chan, @nicks) = @_;
+      my $nick = join ",", @nicks;
+
+      print "$chan -= $nick\n";
+      print "chans: " . (join ";", keys %{$self->channel_list}) ."\n";
+      print "nicks: " . (join ";", keys %{$self->channel_list ()->{$chan}}) ."\n";
+   }
+);
+
+$pc->reg_cb (
+   connect => sub {
+      my ($pc, $err) = @_;
+      if (defined $err) {
+         print "Couldn't connect to server: $err\n";
+      }
+   },
+   registered => sub {
+      my ($self) = @_;
+      print "registered!\n";
+      $pc->enable_ping (60);
+   },
+   disconnect => sub {
+      print "disconnected!\n";
+   }
+);
+
+my $readlog = read_icingalog();
+
+sub read_icingalog {
+    open (my $log, $nagioslog) or die "failed to open $nagioslog: $!\n";
+      while (my $row = <$log>) {
+          chomp $row;
+            if ($row =~ /^\[(\d+)\] (SERVICE ALERT: (.+))/) {
+              my $datestamp = ($1);
+              my $recent = time() -5;
+              my $msg = ($2);
+              my @msg_explode = split(";",$msg,6);
+              my ($host, $service, $state, $how, $attempts, $output) = @msg_explode[0,1,2,3,4,5];
+
+              if ( $datestamp >= $recent ) {  
+                my $msg_out = $state_to_color->{$state} ."$host:$service is $state: $output";
+                return $msg_out;          
+             }
+          }
+      }
+}     
+
+# these commands will queue until the connection
+# is completly registered and has a valid nick etc.
+$pc->send_srv("JOIN", "#wdtest");
+$pc->send_chan ("#wdtest", "PRIVMSG", "#wdtest", "$readlog");
+$pc->connect ("irc.foonetic.net", 6667, { nick => 'IcingaMonitor', user => 'net_irc3', real => 'test bot' });
+$c->recv;
+$pc->disconnect;
