@@ -117,18 +117,20 @@ sub on_endofnames {
       #seek $NAGIOS, 0, 2; # seek to end
       while (my $row = <$log>) {
           chomp $row;
-          if ($row =~ /^\[\d+\] CURRENT (HOST|SERVICE) STATE: (.+)$/) {
-           my ($type, $msg) = ($1, $2);
-            my ($host, $service, $state, $how, $attempts, $output);
-            if ($type eq "SERVICE") {
-               ($host, $service, $state, $how, $attempts, $output) = split(";",$msg,6);
+          if ($row =~ /^\[\d+\] CURRENT SERVICE STATE: (.+)$/) {
+              my $msg = ($1);
+              #my ($host, $service, $state, $how, $attempts, $output);
+            #if ($type eq "") {
+              my ($host, $service, $state, $how, $attempts, $output) = split(";",$msg,6);
             #    next if exists $renot{"$host:$service"} && $renot{"$host:$service"} >= time() - 5;
            #     $renot{"$host:$service"} = time();
 
-              # my $id = ackable($host,$service,$state,$output);
-               $msg = $state_to_color->{$state} . "$host:$service is $state: $output";
-             print "$msg\n";           
-            }
+              # my $id = ckable($host,$service,$state,$output);
+#             if $host eq "wikidata.org" {  
+              my $msg_out = "$host:$service is $state: $output";
+             print "$msg_out\n";          
+ #            }
+          }
             #$service ||= "";
 
             # alerts can be separated by who they're for (which group is getting it)
@@ -136,10 +138,9 @@ sub on_endofnames {
 
           #  if ((!grep { $_ eq "$host:$service" } keys %ignore) &&
           #      (!grep { $_ eq "$host" } keys %ignore)) {
-        #        $conn->privmsg($_,"$msg") foreach @channels;
-          }
-        #last if $. == 2; 
+             $conn->privmsg($_,"$msg_out");
       }
+        #last if $. == 2; 
 }     
        
  #     }
