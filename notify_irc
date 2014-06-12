@@ -48,9 +48,8 @@ my $state_to_color = {
 };
 
 
-# CONFIG: point this to Icinga log and command files
+# CONFIG: point this to Icinga log file
 my $nagioslog = "/var/log/icinga/icinga.log";
-my $nagioscmd = "/var/lib/icinga/rw/icinga.cmd";
 
 # process cli arguments
 Getopt::Long::Configure( "no_ignore_case", "bundling" );
@@ -106,9 +105,9 @@ sub read_icingalog {
 }     
 
 # these commands will queue until the connection
-# is completly registered and has a valid nick etc.
+# is completely registered and has a valid nick etc.
 $pc->send_srv("JOIN", "$channel");
 $pc->send_chan ("$channel", "PRIVMSG", "$channel", "$readlog");
-$pc->connect ("$network", 6667, { nick => 'IcingaMonitor', user => 'net_irc3', real => 'test bot' });
+$pc->connect ("$network", 6667, { nick => 'IcingaMonitor', user => 'net_irc3', real => 'notification bot' });
 $c->recv;
 $pc->disconnect;
