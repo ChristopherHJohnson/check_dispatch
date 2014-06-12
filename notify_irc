@@ -1,13 +1,32 @@
 #!/usr/bin/perl -w
+#===============================================================================
 #
+#         FILE: notify_irc
+#
+#        USAGE: notify_irc -N irc.network.net -c \#irc_channel
+#
+#  DESCRIPTION: icinga event handler script that sends alerts to
+#               IRC 
+#      OPTIONS: ---
+# REQUIREMENTS: AnyEvent, AnyEvent::IRC::Client
+#         BUGS: ---
+#        NOTES: ---
+#       AUTHOR: Christopher Johnson, christopher.johnson@wikimedia.de
+#      COMPANY:
+#      VERSION: 0.1
+#      CREATED:
+#     REVISION: ---
+#===============================================================================
 
 use strict;
-use POSIX "sys_wait_h";
 use Term::ANSIColor qw/ :constants /;
 use AnyEvent;
 use AnyEvent::IRC::Client;
+use Getopt::Long;
 
 my $version = "IcingaBot v0.1";
+my $network = undef;
+my $channel = undef;
 
 #ANSI colors
 my %C = (
@@ -33,43 +52,19 @@ my $state_to_color = {
 my $nagioslog = "/var/log/icinga/icinga.log";
 my $nagioscmd = "/var/lib/icinga/rw/icinga.cmd";
 
-# Create the IRC and Connection objects
+# process cli arguments
+Getopt::Long::Configure( "no_ignore_case", "bundling" );
+GetOptions(
+    'N|network=s' => \$network,
+    'c|channel=s'   => \$channel,
+);
 
-my $channel = "#wdtest";
+# Create the IRC and Connection objects
 
 print "Creating connection to IRC server...\n";
 my $c = AnyEvent->condvar;
 my $timer = AnyEvent->timer (after => 5, cb => sub { $c->send });
 my $pc = AnyEvent::IRC::Client->new;
-
-$pc->reg_cb (
-   irc_privmsg => sub {
-      my ($self, $msg) = @_;
-
-      if ($msg->{params}->[-1] =~ m/net_irc3:\s*(.*)/) {
-         $pc->send_chan ("#test", "PRIVMSG", "#test", "yes?");
-      }
-   }
-);
-
-$pc->reg_cb (
-   channel_add => sub {
-      my ($self, $msg, $chan, @nicks) = @_;
-      my $nick = join ",", @nicks;
-
-      print "$chan += $nick\n";
-      print "chans: " . (join ";", keys %{$self->channel_list}) ."\n";
-      print "nicks: " . (join ";", keys %{$self->channel_list ()->{$chan}}) ."\n";
-   },
-   channel_remove => sub {
-      my ($self, $msg, $chan, @nicks) = @_;
-      my $nick = join ",", @nicks;
-
-      print "$chan -= $nick\n";
-      print "chans: " . (join ";", keys %{$self->channel_list}) ."\n";
-      print "nicks: " . (join ";", keys %{$self->channel_list ()->{$chan}}) ."\n";
-   }
-);
 
 $pc->reg_cb (
    connect => sub {
@@ -112,8 +107,8 @@ sub read_icingalog {
 
 # these commands will queue until the connection
 # is completly registered and has a valid nick etc.
-$pc->send_srv("JOIN", "#wdtest");
-$pc->send_chan ("#wdtest", "PRIVMSG", "#wdtest", "$readlog");
-$pc->connect ("irc.foonetic.net", 6667, { nick => 'IcingaMonitor', user => 'net_irc3', real => 'test bot' });
+$pc->send_srv("JOIN", "$channel");
+$pc->send_chan ("$channel", "PRIVMSG", "$channel", "$readlog");
+$pc->connect ("$network", 6667, { nick => 'IcingaMonitor', user => 'net_irc3', real => 'test bot' });
 $c->recv;
 $pc->disconnect;
